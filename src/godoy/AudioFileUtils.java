@@ -15,20 +15,6 @@ public class AudioFileUtils {
 
     private static final Logger logger = Logger.getLogger(AudioFileUtils.class.getName());
     
-    /**
-     * Reads the given file, returning a 1-channel input stream containing
-     * a mix of the two stereo channels in the given file.
-     * 
-     * @param desiredFormat The format that the data should be in in the returned
-     * AudioInputStream. The channels value must be 1, and the sample size in bits
-     * must be 16.
-     * @param file The file to read. Currently, WAV and AIFF are supported.
-     * Future support for mp3 and ogg vorbis is planned.
-     * @return an audio input stream with 1 channel
-     * @throws IOException If the file can't be read
-     * @throws UnsupportedAudioFileException If the audio system doesn't support the audio file's type
-     * @throws IllegalArgumentException if the 
-     */
     public static AudioInputStream readAsMono(final AudioFormat desiredFormat, File file) throws UnsupportedAudioFileException, IOException {
         if (desiredFormat.getSampleSizeInBits() != 16) {
             throw new UnsupportedOperationException(

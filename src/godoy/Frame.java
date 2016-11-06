@@ -47,10 +47,7 @@ public class Frame {
             min = Math.min(data[i], min);
             max = Math.max(data[i], max);
         }
-        
-        if (logger.isLoggable(Level.FINER)) {
-            logger.finer(String.format("Computed frame. min=%4.6f max=%4.6f", min, max));
-        }
+ 
     }
 
     private static DoubleDCT_1D getDctInstance(int frameSize) {

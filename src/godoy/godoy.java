@@ -13,7 +13,8 @@ public class godoy {
 			Clip clip = Clip.newInstance(wavFile);
 		}
 		catch (Exception ex) {
-			System.out.println("Die Verarbeitung der Datei ist fehlgeschlagen");
+			System.out.println("Die Verarbeitung der Datei ist fehlgeschlagen.");
+			ex.printStackTrace(System.out);
 		}
 		
 		System.out.println("Programm endet.");
