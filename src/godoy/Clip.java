@@ -28,22 +28,18 @@ public class Clip {
      */
     private static final AudioFormat AUDIO_FORMAT = new AudioFormat(44100, 16, 1, true, true);
 
-    private static final int DEFAULT_FRAME_SIZE = 1323; //Muss eine Zweierpotenz sein (23,2199 ms Länge)   
+    private static final int DEFAULT_FRAME_SIZE = 1323; //30 ms Frame 
     
     private final List<Frame> frames = new ArrayList<Frame>();
     
     /**
-     * Anzahl der Samples pro Frame. Muss eine Zweierpotenz sein (Anforderung vieler DFT-Routinen)
+     * Anzahl der Samples pro Frame. 
      */
     private final int frameSize;
     
-    /**
-     * The amount that the time samples are divided by before sending to the transformation,
-     * and the amount they're multiplied after being transformed back.
-     */
-    private double spectralScale = 10000.0;
-
     private final String name;
+    
+    private Exporter exporter;
  
     public static Clip newInstance(File file) throws UnsupportedAudioFileException, IOException {
         AudioFormat desiredFormat = AUDIO_FORMAT;
@@ -72,7 +68,7 @@ public class Clip {
                 int hi = buf[2 * i];
                 int low = buf[2 * i + 1] & 0xff;
                 int sampVal = (hi << 8) | low;            	
-                samples[i] = (sampVal / spectralScale);
+                samples[i] = sampVal;
             }
             
             frames.add(new Frame(samples, windowFunc));
@@ -88,6 +84,8 @@ public class Clip {
 //        for (int i = 0; i < someFrame.getLength(); i++) {
 //        	logger.info("fri(" + i + ")=" + someFrame.getReal(i));
 //        }
+        
+        exporter = new Exporter(frames);
     }
     
     private int readFully(InputStream in, byte[] buf) throws IOException {
@@ -124,6 +122,10 @@ public class Clip {
 
     public double getSamplingRate() {
         return AUDIO_FORMAT.getSampleRate();
+    }
+    
+    public Exporter getExporter() {
+    	return exporter;
     }
 
 }
