@@ -6,11 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 /**
@@ -32,6 +30,8 @@ public class Clip {
     
     private final List<Frame> frames = new ArrayList<Frame>();
     
+    private final PitchAnalyzer pitchAnalyzer;
+    
     /**
      * Anzahl der Samples pro Frame. 
      */
@@ -41,21 +41,33 @@ public class Clip {
     
     private Exporter exporter;
  
-    public static Clip newInstance(File file) throws UnsupportedAudioFileException, IOException {
+    public static Clip newInstance(File file, File pitchListingFile) throws UnsupportedAudioFileException, IOException {
         AudioFormat desiredFormat = AUDIO_FORMAT;
         BufferedInputStream in = new BufferedInputStream(AudioFileUtils.readAsMono(desiredFormat, file));
-        return new Clip(file.getAbsolutePath(), in, DEFAULT_FRAME_SIZE);
+        return new Clip(file.getAbsolutePath(), in, pitchListingFile);
     }
    
-    private Clip(String name, InputStream in, int frameSize) throws IOException {
+    private Clip(String name, InputStream in, File pitchListingFile) throws IOException {
         this.name = name;
-        this.frameSize = frameSize;
         
-        WindowFunction windowFunc = new VorbisWindowFunction(frameSize);
+        /* Pitch-Listing abarbeiten */
+        pitchAnalyzer = new PitchAnalyzer(pitchListingFile);
         
-        byte[] buf = new byte[frameSize * 2]; // 16-bit mono samples
+        frameSize = (int) (pitchAnalyzer.timeStep() * AUDIO_FORMAT.getSampleRate());
+        
+        /* Fensterfunktion erzeugen */
+        WindowFunction windowFunc = new HammingWindowFunction(frameSize);
+        
+        byte[] buf = new byte[frameSize * 2]; // 16-bit Monosamples
         int n;
-        in.mark(buf.length * 2);
+        
+//        in.mark(buf.length * 2); // Probably not needed
+        
+        double timeCounter = pitchAnalyzer.initialTime();
+        
+        /* Anfangsbytes überspringen. Orientiert sich am ersten Listeneintrag aus der Pitch-Listing-Datei */
+        in.skip(Math.round(pitchAnalyzer.initialTime() * AUDIO_FORMAT.getSampleRate()) * 2);
+        
         while ((n = readFully(in, buf)) != -1) {             	
             if (n != buf.length) {                
                 // Mit Nullen auffüllen, sonst gibt es eine hörbare Störung am Clipende
@@ -63,32 +75,42 @@ public class Clip {
                     buf[i] = 0;
                 }
             }
-            double[] samples = new double[frameSize];
-            for (int i = 0; i < frameSize; i++) {
-                int hi = buf[2 * i];
-                int low = buf[2 * i + 1] & 0xff;
-                int sampVal = (hi << 8) | low;            	
-                samples[i] = sampVal;
+            
+            /* Frame zur Analyse nur erzeugen, wenn stimmhaft */
+            if (pitchAnalyzer.isVoiced(timeCounter)) {            
+	            double[] samples = new double[frameSize];
+	            for (int i = 0; i < frameSize; i++) {
+	                int hi = buf[2 * i];
+	                int low = buf[2 * i + 1] & 0xff;
+	                int sampVal = (hi << 8) | low;            	
+	                samples[i] = sampVal;
+	            }
+	            
+	            frames.add(new Frame(samples, windowFunc));
             }
             
-            frames.add(new Frame(samples, windowFunc));
+            timeCounter += pitchAnalyzer.timeStep();
             
-            in.reset();     
-            long bytesToSkip = frameSize * 2;
-            in.skip(bytesToSkip);
-            in.mark(buf.length * 2);                 
+            //Wegen der Präzisionfehler...
+            timeCounter = Math.round(timeCounter * 1000000.0) / 1000000.0;
+            logger.info("tsw=" + timeCounter);
+//            in.reset();      // Probably not needed
+//            long bytesToSkip = frameSize * 2; // Probably not needed
+//            in.skip(bytesToSkip); // Probably not needed
+//            in.mark(buf.length * 2);        // Probably not needed         
         }
         
-        Frame someFrame = frames.get(25);
+//        Frame someFrame = frames.get(25);
         logger.info("counter=" + frames.size());
+//        logger.info("ags=" + AUDIO_FORMAT.getSampleRate());
 //        for (int i = 0; i < someFrame.getLength(); i++) {
 //        	logger.info("fri(" + i + ")=" + someFrame.getReal(i));
 //        }
         
         exporter = new Exporter(frames);
-    }
-    
-    private int readFully(InputStream in, byte[] buf) throws IOException {
+    }    
+
+	private int readFully(InputStream in, byte[] buf) throws IOException {
         int offset = 0;
         int length = buf.length;
         int bytesRead = 0;

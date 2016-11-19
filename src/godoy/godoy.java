@@ -8,15 +8,20 @@ public class godoy {
 	public static void main(String[] arguments) {	
 		System.out.println("Programm startet.");
 		
-		File wavFile = new File("D:\\Uni\\Diplomarbeit\\Software", "ldc93.wav");
+		/* Audio-Datei öffnen */
+		File wavFile = new File("D:\\Uni\\Diplomarbeit\\Software\\samples", "ldc93.wav");
+		/* Pitch-Listing-Datei öffnen */
+		File pitchListingFile = new File("D:\\Uni\\Diplomarbeit\\Software\\samples", "ldc93-pitch-listing.txt");
+		
 		try {
-			Clip clip = Clip.newInstance(wavFile);
+			Clip clip = Clip.newInstance(wavFile, pitchListingFile);
 			clip.getExporter().exportAsTXT();
 		}
 		catch (Exception ex) {
-			System.out.println("Die Verarbeitung der Datei ist fehlgeschlagen.");
+			System.out.println("Die Verarbeitung der Audio-Datei ist fehlgeschlagen.");
 			ex.printStackTrace(System.out);
 		}
+		
 		
 		System.out.println("Programm endet.");
 	}	

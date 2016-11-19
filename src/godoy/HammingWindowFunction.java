@@ -1,16 +1,15 @@
 package godoy;
 
-public class VorbisWindowFunction implements WindowFunction {
+public class HammingWindowFunction implements WindowFunction {
 
     private final double[] scalars;
     
-    private static final double PI = Math.PI;
+    private static final double PI = Math.PI, ALPHA = 0.54, BETA = 1 - ALPHA;
     
-    public VorbisWindowFunction(int size) {
+    public HammingWindowFunction(int size) {
         scalars = new double[size];
         for (int i = 0; i < size; i++) {
-            double xx = Math.sin((PI / (2.0 * size)) * (2.0 * i));
-            scalars[i] = Math.sin((PI / 2.0) * (xx * xx));
+            scalars[i] = ALPHA - BETA * Math.cos((2 * PI * i) / (size - 1));
         }        
     }
     
