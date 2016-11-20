@@ -10,7 +10,7 @@ import org.jtransforms.dct.DoubleDCT_1D;;
  * frequency components of this frame are modifiable.
  */
 public class Frame {    
-    private double[] data;
+    private double[] data, samples;
 
     /**
      * Optimierung: ein Map mit DCT-Instanzen und der Länge, die sie verarbeiten können
@@ -39,6 +39,8 @@ public class Frame {
             min = Math.min(data[i], min);
             max = Math.max(data[i], max);
         }
+        
+        samples = timeData;
  
     }
 
@@ -57,6 +59,10 @@ public class Frame {
  
     public double getData(int idx) {
         return data[idx];
+    }
+    
+    public double[] getSamples() {
+    	return samples;
     }
 
 }

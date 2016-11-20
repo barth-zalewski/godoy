@@ -93,7 +93,7 @@ public class Clip {
             
             //Wegen der Präzisionfehler...
             timeCounter = Math.round(timeCounter * 1000000.0) / 1000000.0;
-            logger.info("tsw=" + timeCounter);
+            
 //            in.reset();      // Probably not needed
 //            long bytesToSkip = frameSize * 2; // Probably not needed
 //            in.skip(bytesToSkip); // Probably not needed
