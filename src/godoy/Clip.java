@@ -86,7 +86,10 @@ public class Clip {
 	                samples[i] = sampVal;
 	            }
 	            
-	            frames.add(new Frame(samples, windowFunc));
+	            Frame fr = new Frame(samples, windowFunc);
+	            fr.setTimePosition(timeCounter);
+	            
+	            frames.add(fr);
             }
             
             timeCounter += pitchAnalyzer.timeStep();

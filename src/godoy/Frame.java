@@ -19,9 +19,14 @@ public class Frame {
     
     private final WindowFunction windowFunc;
     
+    private double timePosition;
+    
     public Frame(double[] timeData, WindowFunction windowFunc) {
         this.windowFunc = windowFunc;
         int frameSize = timeData.length;
+
+        samples = timeData.clone();
+ 
         DoubleDCT_1D dct = getDctInstance(frameSize);
 
         // in place window
@@ -40,8 +45,6 @@ public class Frame {
             max = Math.max(data[i], max);
         }
         
-        samples = timeData;
- 
     }
 
     private static DoubleDCT_1D getDctInstance(int frameSize) {
@@ -63,6 +66,14 @@ public class Frame {
     
     public double[] getSamples() {
     	return samples;
+    }
+    
+    public void setTimePosition(double tp) {
+    	timePosition = tp;
+    }
+    
+    public double getTimePosition() {
+    	return timePosition;
     }
 
 }

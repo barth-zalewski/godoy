@@ -36,7 +36,7 @@ public class Exporter {
             writer.write("===========\r\n");
             
             for (int i = 0; i < frames.size(); i++) {
-            	writer.write("Frame #" + i + "\r\n");
+            	writer.write("Frame t = " + frames.get(i).getTimePosition() + "\r\n");
             	double[] samples = frames.get(i).getSamples();
             	
             	for (int s = 0; s < samples.length; s++) {
@@ -60,6 +60,8 @@ public class Exporter {
 	
 	public void exportFramesSamples() {
 		try {
+			int maxTrim = 500;
+			
 			for (int i = 0; i < frames.size(); i++) {
 				double[] samples = frames.get(i).getSamples();
 				
@@ -77,10 +79,12 @@ public class Exporter {
 				
 				double absMax = Math.max(Math.abs(min), Math.abs(max));
 				
+				if (absMax > maxTrim) absMax = maxTrim;
+				
 				/* 3 Pixel pro Sample */
 				int pixelsPerSample = 3,
 				    width = samples.length * pixelsPerSample,
-				    height = 200;							
+				    height = 201;							
 				
 				BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 				
@@ -91,11 +95,31 @@ public class Exporter {
 			    
 			    ig2.fillRect(0, 0, width - 1, height - 1);
 			    
-			    ig2.setPaint(Color.blue);
+			    //Horizontale Achse hinzufügen
+			    ig2.setPaint(Color.gray);
+		        ig2.drawLine(0, height / 2, width, height / 2);
 		        
-		        ig2.drawLine(0, 0, 100, 100);
+		        //Samples malen
+		        int prevX = 0, prevY = height / 2;
 		        
-			    ImageIO.write(bi, "BMP", new File("D:\\Uni\\Diplomarbeit\\Software\\samples\\frames\\fr-" + i + ".bmp"));
+		        for (int s = 0; s < samples.length; s++) {					
+				    int endX = s * pixelsPerSample, 
+				    	endY;
+				    
+				    double sample = samples[s];
+				    
+				    if (sample > maxTrim) sample = maxTrim;
+				    if (sample < -maxTrim) sample = -maxTrim;
+				    
+				    endY = (int)((height / 2) + ((height / 2) * (sample / absMax)));
+				    
+				    ig2.drawLine(prevX, prevY, endX, endY);
+				    
+				    prevX = endX;
+				    prevY = endY;
+				}
+		        
+			    ImageIO.write(bi, "BMP", new File("D:\\Uni\\Diplomarbeit\\Software\\samples\\frames\\fr-" + frames.get(i).getTimePosition() + ".bmp"));
 			}
 				      
 	    } catch (IOException ie) {
