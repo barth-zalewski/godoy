@@ -60,7 +60,7 @@ public class Exporter {
 	
 	public void exportFramesSamples() {
 		try {
-			int maxTrim = 500;
+			int maxTrim = 99999999;
 			
 			for (int i = 0; i < frames.size(); i++) {
 				double[] samples = frames.get(i).getSamples();
@@ -111,7 +111,7 @@ public class Exporter {
 				    if (sample > maxTrim) sample = maxTrim;
 				    if (sample < -maxTrim) sample = -maxTrim;
 				    
-				    endY = (int)((height / 2) + ((height / 2) * (sample / absMax)));
+				    endY = (int)((height / 2) - ((height / 2) * (sample / absMax)));
 				    
 				    ig2.drawLine(prevX, prevY, endX, endY);
 				    
@@ -127,5 +127,9 @@ public class Exporter {
 	      ie.printStackTrace();
 	    }
 
+	}
+	
+	public void exportFramesWindowedSamples() {
+		
 	}
 }

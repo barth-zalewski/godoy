@@ -69,4 +69,8 @@ public class PitchAnalyzer {
 		else return false;
 	}
 	
+	public double getPitch(double time) {
+		return pitches.get(time);
+	}
+	
 }

@@ -55,9 +55,6 @@ public class Clip {
         
         frameSize = (int) (pitchAnalyzer.timeStep() * AUDIO_FORMAT.getSampleRate());
         
-        /* Fensterfunktion erzeugen */
-        WindowFunction windowFunc = new HammingWindowFunction(frameSize);
-        
         byte[] buf = new byte[frameSize * 2]; // 16-bit Monosamples
         int n;
         
@@ -86,7 +83,7 @@ public class Clip {
 	                samples[i] = sampVal;
 	            }
 	            
-	            Frame fr = new Frame(samples, windowFunc);
+	            Frame fr = new Frame(samples, pitchAnalyzer.getPitch(timeCounter), AUDIO_FORMAT.getSampleRate());
 	            fr.setTimePosition(timeCounter);
 	            
 	            frames.add(fr);
