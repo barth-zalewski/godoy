@@ -15,8 +15,10 @@ public class godoy {
 		
 		try {
 			Clip clip = Clip.newInstance(wavFile, pitchListingFile);
-			clip.getExporter().exportAsTXT();
-			clip.getExporter().exportFramesSamples();
+			//clip.getExporter().exportAsTXT();
+			//clip.getExporter().exportFramesSamples();
+			clip.getExporter().exportFramesWindowedSamples();
+			//clip.getExporter().exportSpectrums();
 		}
 		catch (Exception ex) {
 			System.out.println("Die Verarbeitung der Audio-Datei ist fehlgeschlagen.");

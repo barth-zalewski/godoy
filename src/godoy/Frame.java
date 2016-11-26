@@ -20,7 +20,10 @@ public class Frame {
     private Map<Integer, double[]> sample1sByOffset = new HashMap<Integer, double[]>();
     private Map<Integer, double[]> sample2sByOffset = new HashMap<Integer, double[]>();
     
-    private final double windowDuration = 0.001; //s
+    private Map<Integer, double[]> spectrum1sByOffset = new HashMap<Integer, double[]>();
+    private Map<Integer, double[]> spectrum2sByOffset = new HashMap<Integer, double[]>();
+    
+    private final double windowDuration; //s
     
     private double timePosition;
     
@@ -30,6 +33,8 @@ public class Frame {
 
         int frameSize = timeData.length;
         this.pitch = pitch;
+        
+        windowDuration = (1 / pitch) / 3; //GODOY
 
         double[] allSamples = timeData.clone();
         
@@ -54,13 +59,15 @@ public class Frame {
         
         samples = new double[samplesPerPeriod];
         this.allSamples = allSamples;
+        
+        double openPhaseMarginOffset = 0.33333333333;
                 
         //Nur verarbeiten, wenn eine ganze Periode im Frame
-        if (positionOfLocalMaximum + samplesPerPeriod < allSamples.length) {
+        if (positionOfLocalMaximum >= samplesPerPeriod * openPhaseMarginOffset && positionOfLocalMaximum + samplesPerPeriod < allSamples.length) {
 
-        	//Die Variable "samples" repräsentiert nun eine ganze Periode
+        	//Die Variable "samples" repräsentiert nun eine ganze Periode, verschoben um openPhaseMarginOffset nach links
         	for (int i = 0; i < samplesPerPeriod; i++) {                 	
-            	samples[i] = allSamples[i + positionOfLocalMaximum];        	
+            	samples[i] = allSamples[i + positionOfLocalMaximum - (int)(openPhaseMarginOffset * samplesPerPeriod)];              	
             }
             
             // Zur Anzahl der Samples passende Instanz der FFT-Funktion
@@ -81,33 +88,22 @@ public class Frame {
             		samples2[z] = samples[z + j + (int)(samplesPerPeriod / 2)];
             	}                        
             
-//            	windowFunc.applyWindow(samples1);
-//            	windowFunc.applyWindow(samples2);
+            	windowFunc.applyWindow(samples1);
+            	windowFunc.applyWindow(samples2);
             	
             	sample1sByOffset.put(j, samples1);
             	sample2sByOffset.put(j, samples2);
+            	
+            	double[] spectrum1 = samples1.clone();
+            	double[] spectrum2 = samples2.clone();
+            	
+            	// Transformieren
+            	dct.realForward(spectrum1);
+            	dct.realForward(spectrum2);
+            	
+            	spectrum1sByOffset.put(j, spectrum1);
+            	spectrum2sByOffset.put(j, spectrum2);
             }            
-
-//            
-//            this.windowFunc = windowFunc;
-//            
-//            windowFunc.applyWindow(samples);
-    //
-//            // Transformieren
-//            dct.realForward(samples);
-
-            double min = Double.POSITIVE_INFINITY;
-            double max = Double.NEGATIVE_INFINITY;
-            
-            
-            
-//            
-//            data = new double[samples.length];
-//            for (int i = 0; i < data.length; i++) {
-//                data[i] = timeData[i];
-//                min = Math.min(data[i], min);
-//                max = Math.max(data[i], max);
-//            }
             
         }
         
@@ -144,6 +140,14 @@ public class Frame {
     
     public Map<Integer, double[]> getWindowedSamples2() {
     	return sample2sByOffset;    	
+    }
+    
+    public Map<Integer, double[]> getSpectrums1() {
+    	return spectrum1sByOffset;    	
+    }
+    
+    public Map<Integer, double[]> getSpectrums2() {
+    	return spectrum2sByOffset;    	
     }
     
     public void setTimePosition(double tp) {
