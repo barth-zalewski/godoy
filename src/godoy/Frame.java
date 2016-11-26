@@ -101,8 +101,35 @@ public class Frame {
             	dct.realForward(spectrum1);
             	dct.realForward(spectrum2);
             	
-            	spectrum1sByOffset.put(j, spectrum1);
-            	spectrum2sByOffset.put(j, spectrum2);
+            	// Das Spektrum aus den Daten extrahieren
+            	int sizeOfSpectrum = samples1.length % 2 == 0 ? /* gerade */ samples1.length / 2 : /* ungerade */ (samples1.length - 1) / 2;
+            	
+            	double[] calculatedSpectrum1 = new double[sizeOfSpectrum - 1],
+            			 calculatedSpectrum2 = new double[sizeOfSpectrum - 1];
+            	
+            	for (int s = 1; s < sizeOfSpectrum; s++) {
+            		double re1 = spectrum1[2 * s],
+            			   im1 = spectrum1[2 * s + 1],
+            			   mag1 = Math.sqrt(re1 * re1 + im1 * im1),
+            			   re2 = spectrum2[2 * s],
+                    	   im2 = spectrum2[2 * s + 1],
+                    	   mag2 = Math.sqrt(re2 * re2 + im2 * im2);
+            		
+            		calculatedSpectrum1[s - 1] = mag1;
+            		calculatedSpectrum2[s - 1] = mag2;
+            			   
+            	}
+            	
+            	//In dB umrechnen
+            	double basisLevel = 0.00002;
+            	
+            	for (int z = 0; z < calculatedSpectrum1.length; z++) {
+            		calculatedSpectrum1[z] = 20 * Math.log10(calculatedSpectrum1[z] / basisLevel);
+            		calculatedSpectrum2[z] = 20 * Math.log10(calculatedSpectrum2[z] / basisLevel);
+            	}
+            	
+            	spectrum1sByOffset.put(j, calculatedSpectrum1);
+            	spectrum2sByOffset.put(j, calculatedSpectrum2);
             }            
             
         }
