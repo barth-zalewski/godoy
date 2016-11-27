@@ -1,6 +1,8 @@
 package godoy;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.jtransforms.fft.DoubleFFT_1D;
@@ -73,10 +75,12 @@ public class Frame {
             // Zur Anzahl der Samples passende Instanz der FFT-Funktion
             DoubleFFT_1D dct = getDctInstance(samplesPerWindow);
 
+            int zeroPaddingLengthFactor = 3;
+            
             /* Fensterfunktion anwenden */
 
             // Fensterfunktion erzeugen
-            WindowFunction windowFunc = new HammingWindowFunction(samplesPerWindow);            
+            WindowFunction windowFunc = new HammingWindowFunction(samplesPerWindow * zeroPaddingLengthFactor);            
                         
             // Die Analyse erfolgt für alle Samples von j=0 bis j = samplesPerPeriod / 2
             for (int j = 0; j < samplesPerPeriod / 2 - samplesPerWindow; j++) {
@@ -86,23 +90,38 @@ public class Frame {
             	for (int z = 0; z < samplesPerWindow; z++) {
             		samples1[z] = samples[z + j];            		
             		samples2[z] = samples[z + j + (int)(samplesPerPeriod / 2)];
-            	}                        
+            	}         
+            	
+            	//Zero-Padding vor oder nach Fensterfunktion?
+            	double[] samples1ZeroPadded = new double[samplesPerWindow * zeroPaddingLengthFactor],
+            			 samples2ZeroPadded = new double[samplesPerWindow * zeroPaddingLengthFactor];
+            	
+            	for (int z = 0; z < samplesPerWindow * zeroPaddingLengthFactor; z++) {
+            		if (z < samplesPerWindow) {
+            			samples1ZeroPadded[z] = samples1[z];
+            			samples2ZeroPadded[z] = samples2[z];
+            		}
+            		else {
+            			samples1ZeroPadded[z] = 0;
+            			samples2ZeroPadded[z] = 0;
+            		}
+            	}
             
-            	windowFunc.applyWindow(samples1);
-            	windowFunc.applyWindow(samples2);
+            	windowFunc.applyWindow(samples1ZeroPadded);
+            	windowFunc.applyWindow(samples2ZeroPadded);
             	
-            	sample1sByOffset.put(j, samples1);
-            	sample2sByOffset.put(j, samples2);
+            	sample1sByOffset.put(j, samples1ZeroPadded);
+            	sample2sByOffset.put(j, samples2ZeroPadded);
             	
-            	double[] spectrum1 = samples1.clone();
-            	double[] spectrum2 = samples2.clone();
+            	double[] spectrum1 = samples1ZeroPadded.clone();
+            	double[] spectrum2 = samples2ZeroPadded.clone();
             	
             	// Transformieren
             	dct.realForward(spectrum1);
             	dct.realForward(spectrum2);
             	
             	// Das Spektrum aus den Daten extrahieren
-            	int sizeOfSpectrum = samples1.length % 2 == 0 ? /* gerade */ samples1.length / 2 : /* ungerade */ (samples1.length - 1) / 2;
+            	int sizeOfSpectrum = spectrum1.length % 2 == 0 ? /* gerade */ spectrum1.length / 2 : /* ungerade */ (spectrum1.length - 1) / 2;
             	
             	double[] calculatedSpectrum1 = new double[sizeOfSpectrum - 1],
             			 calculatedSpectrum2 = new double[sizeOfSpectrum - 1];
@@ -118,14 +137,49 @@ public class Frame {
             		calculatedSpectrum1[s - 1] = mag1;
             		calculatedSpectrum2[s - 1] = mag2;
             			   
+            	}            	
+
+            	//Nur interessierende Frequenzen beachten
+            	ArrayList<Double> relevantSpectrums1 = new ArrayList<Double>(),
+            			   		  relevantSpectrums2 = new ArrayList<Double>();
+            	
+            	int minFrequency = 1000, //Hz
+            		maxFrequency = 6000, //Hz          
+            		k = 1,
+            		currentFrequency = (int)(1.0 * Clip.getClassSamplingRate() / samples1ZeroPadded.length);    
+            	
+            	double basisLevel = 20.0;
+            	
+            	while (currentFrequency < maxFrequency) {
+            		if (currentFrequency > minFrequency) {
+            			//in dB umrechnen            			       
+            			double cs1 = 20.0 * Math.log10(calculatedSpectrum1[k - 1] / basisLevel), 
+            				   cs2 = 20.0 * Math.log10(calculatedSpectrum2[k - 1] / basisLevel);            			
+            			
+            			relevantSpectrums1.add(cs1);
+            			relevantSpectrums2.add(cs2);
+            			
+            			System.out.println("f=" + currentFrequency + " Hz, cs1=" + cs1 + " dB, cs2=" + cs2 + " dB");
+            		}
+            		k++;
+            		currentFrequency += (int)(Clip.getClassSamplingRate() / samples1ZeroPadded.length);
             	}
             	
-            	//In dB umrechnen
-            	double basisLevel = 0.00002;
+            	calculatedSpectrum1 = new double[relevantSpectrums1.size()];
+            	calculatedSpectrum2 = new double[relevantSpectrums2.size()];
             	
-            	for (int z = 0; z < calculatedSpectrum1.length; z++) {
-            		calculatedSpectrum1[z] = 20 * Math.log10(calculatedSpectrum1[z] / basisLevel);
-            		calculatedSpectrum2[z] = 20 * Math.log10(calculatedSpectrum2[z] / basisLevel);
+            	int sz = 0;
+            	
+            	for (double rs : relevantSpectrums1) {
+            		calculatedSpectrum1[sz] = rs;
+            		sz++;
+            	}
+            	
+            	sz = 0;
+            	
+            	for (double rs : relevantSpectrums2) {
+            		calculatedSpectrum2[sz] = rs;
+            		sz++;
             	}
             	
             	spectrum1sByOffset.put(j, calculatedSpectrum1);

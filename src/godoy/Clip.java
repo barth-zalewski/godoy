@@ -146,6 +146,10 @@ public class Clip {
         return AUDIO_FORMAT.getSampleRate();
     }
     
+    public static double getClassSamplingRate() {
+        return AUDIO_FORMAT.getSampleRate();
+    }
+    
     public Exporter getExporter() {
     	return exporter;
     }
