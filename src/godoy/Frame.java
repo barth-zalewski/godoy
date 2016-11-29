@@ -2,8 +2,14 @@ package godoy;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
+
+import biz.source_code.dsp.filter.FilterCharacteristicsType;
+import biz.source_code.dsp.filter.FilterPassType;
+import biz.source_code.dsp.filter.IirFilter;
+import biz.source_code.dsp.filter.IirFilterCoefficients;
+import biz.source_code.dsp.filter.IirFilterDesignFisher;
+import biz.source_code.dsp.signal.EnvelopeDetector;
 
 import org.jtransforms.fft.DoubleFFT_1D;
 
@@ -31,6 +37,10 @@ public class Frame {
     
     private double pitch;
     
+    private EnvelopeDetector envelopeDetector;
+    
+    private float[] envelope;
+    
     public Frame(double[] timeData, double pitch, float sampleRate) {
 
         int frameSize = timeData.length;
@@ -41,6 +51,24 @@ public class Frame {
         double[] allSamples = timeData.clone();
         
         int samplesPerWindow = (int)(sampleRate * windowDuration);
+        
+
+        double lowerFilterCutoffFreq = 200;
+        double upperFilterCutoffFreq = 7000;
+        int filterOrder = 4;                                    // higher bandpass filter orders would be instable because of the small lower cutoff frequency
+        double filterRipple = -0.01;
+        double fcf1Rel = lowerFilterCutoffFreq / (int)Clip.getClassSamplingRate();
+        double fcf2Rel = upperFilterCutoffFreq / (int)Clip.getClassSamplingRate();
+        IirFilterCoefficients coeffs = IirFilterDesignFisher.design(FilterPassType.bandpass, FilterCharacteristicsType.chebyshev, filterOrder, filterRipple, fcf1Rel, fcf2Rel);
+        envelopeDetector = new EnvelopeDetector((int)Clip.getClassSamplingRate(), 0.00005, 0.003, new IirFilter(coeffs));
+        
+        float[] allSamplesAsFloats = new float[timeData.length];
+        
+        for (int df = 0; df < timeData.length; df++) allSamplesAsFloats[df] = (float)allSamples[df];
+        
+        envelope = envelopeDetector.process(allSamplesAsFloats);
+        
+        //System.out.println("allslen=" + allSamples.length + ", envlen=" + envelope.length);
         
         /* Das erste lokale Maximum finden */
         int samplesPerPeriod = (int)((1 / pitch) * sampleRate);
@@ -62,7 +90,7 @@ public class Frame {
         samples = new double[samplesPerPeriod];
         this.allSamples = allSamples;
         
-        double openPhaseMarginOffset = 0.33333333333;
+        double openPhaseMarginOffset = 0.22222222;
                 
         //Nur verarbeiten, wenn eine ganze Periode im Frame
         if (positionOfLocalMaximum >= samplesPerPeriod * openPhaseMarginOffset && positionOfLocalMaximum + samplesPerPeriod < allSamples.length) {
@@ -71,25 +99,27 @@ public class Frame {
         	for (int i = 0; i < samplesPerPeriod; i++) {                 	
             	samples[i] = allSamples[i + positionOfLocalMaximum - (int)(openPhaseMarginOffset * samplesPerPeriod)];              	
             }
+        	
+        	//Mit wie vielen Nullen soll gepaddet werden? Die Zahl gibt an, wie viel mal die eigentliche Anzahl Samples erhöht werden soll    
+            int zeroPaddingLengthFactor = 5;            
             
             // Zur Anzahl der Samples passende Instanz der FFT-Funktion
-            DoubleFFT_1D dct = getDctInstance(samplesPerWindow);
-
-            int zeroPaddingLengthFactor = 3;
-            
-            /* Fensterfunktion anwenden */
+            DoubleFFT_1D dct = getDctInstance(samplesPerWindow * zeroPaddingLengthFactor);
 
             // Fensterfunktion erzeugen
             WindowFunction windowFunc = new HammingWindowFunction(samplesPerWindow * zeroPaddingLengthFactor);            
                         
-            // Die Analyse erfolgt für alle Samples von j=0 bis j = samplesPerPeriod / 2
-            for (int j = 0; j < samplesPerPeriod / 2 - samplesPerWindow; j++) {
+            // Um welchen Teil der Periode soll das zweite Spektrum verschoben werden?
+            double secondSpectrumOffset = 0.4;
+            
+            // Die Analyse erfolgt für alle Samples von j=0 bis j = samplesPerPeriod * 
+            for (int j = 0; j < samplesPerPeriod * secondSpectrumOffset - samplesPerWindow; j++) {
             	double[] samples1 = new double[samplesPerWindow], 
             	 		 samples2 = new double[samplesPerWindow];
             	
             	for (int z = 0; z < samplesPerWindow; z++) {
             		samples1[z] = samples[z + j];            		
-            		samples2[z] = samples[z + j + (int)(samplesPerPeriod / 2)];
+            		samples2[z] = samples[z + j + (int)(samplesPerPeriod * secondSpectrumOffset)];
             	}         
             	
             	//Zero-Padding vor oder nach Fensterfunktion?
@@ -143,12 +173,12 @@ public class Frame {
             	ArrayList<Double> relevantSpectrums1 = new ArrayList<Double>(),
             			   		  relevantSpectrums2 = new ArrayList<Double>();
             	
-            	int minFrequency = 1000, //Hz
-            		maxFrequency = 6000, //Hz          
+            	int minFrequency = 3000, //Hz
+            		maxFrequency = 8000, //Hz          
             		k = 1,
             		currentFrequency = (int)(1.0 * Clip.getClassSamplingRate() / samples1ZeroPadded.length);    
             	
-            	double basisLevel = 20.0;
+            	double basisLevel = 100.0;
             	
             	while (currentFrequency < maxFrequency) {
             		if (currentFrequency > minFrequency) {
@@ -159,7 +189,7 @@ public class Frame {
             			relevantSpectrums1.add(cs1);
             			relevantSpectrums2.add(cs2);
             			
-            			System.out.println("f=" + currentFrequency + " Hz, cs1=" + cs1 + " dB, cs2=" + cs2 + " dB");
+            			//System.out.println("f=" + currentFrequency + " Hz, cs1=" + cs1 + " dB, cs2=" + cs2 + " dB");
             		}
             		k++;
             		currentFrequency += (int)(Clip.getClassSamplingRate() / samples1ZeroPadded.length);
@@ -237,6 +267,10 @@ public class Frame {
     
     public double getTimePosition() {
     	return timePosition;
+    }
+    
+    public float[] getEnvelope() {
+    	return envelope;
     }
 
 }

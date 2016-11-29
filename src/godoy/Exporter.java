@@ -64,7 +64,7 @@ public class Exporter {
 			int maxTrim = 99999999;
 			
 			for (int i = 0; i < frames.size(); i++) {
-				double[] samples = frames.get(i).getSamples();
+				double[] samples = frames.get(i).getAllSamples();
 				
 				/* Zuerst kleinsten und größten Sample finden */
 				double min = Double.POSITIVE_INFINITY, max = Double.NEGATIVE_INFINITY;
@@ -113,6 +113,31 @@ public class Exporter {
 				    if (sample < -maxTrim) sample = -maxTrim;
 				    
 				    endY = (int)((height / 2) - ((height / 2) * (sample / absMax)));
+				    
+				    ig2.drawLine(prevX, prevY, endX, endY);
+				    
+				    prevX = endX;
+				    prevY = endY;
+				}
+		        
+		        //Envelope hinzufügen
+		        prevX = 0;
+		        prevY = height / 2;
+		        
+		        ig2.setPaint(Color.magenta);
+		        
+		        float[] envelope = frames.get(i).getEnvelope();
+		        
+		        for (int s = 0; s < envelope.length; s++) {					
+				    int endX = s * pixelsPerSample, 
+				    	endY;
+				    
+				    float envelopeVertex = envelope[s];
+				    
+				    if (envelopeVertex > maxTrim) envelopeVertex = maxTrim;
+				    if (envelopeVertex < -maxTrim) envelopeVertex = -maxTrim;
+				    
+				    endY = (int)((height / 2) - ((height / 2) * (envelopeVertex / absMax)));
 				    
 				    ig2.drawLine(prevX, prevY, endX, endY);
 				    
@@ -294,7 +319,7 @@ public class Exporter {
 			        //Samples malen
 			        int prevX = 0, prevY = height / 2;
 			        
-			        ig2.setPaint(Color.blue);
+			        ig2.setPaint(Color.yellow);
 			        
 			        for (int s = 0; s < spectrum1.length; s++) {				        	
 					    int endX = s * pixelsPerFrequency, 
@@ -329,10 +354,30 @@ public class Exporter {
 					    prevY = endY;
 					}
 			        
-			        File folder = new File("D:\\Uni\\Diplomarbeit\\Software\\samples\\frames\\spectrum-" + frames.get(i).getTimePosition());
+			        //Differenz malen
+			        prevX = 0;
+			        prevY = height / 2;
+			        
+			        ig2.setPaint(Color.black);
+			        
+			        for (int s = 0; s < spectrum1.length; s++) {				        	
+					    int endX = s * pixelsPerFrequency, 
+					    	endY;
+					    
+					    double frequency1 = spectrum1[s], frequency2 = spectrum2[s];
+					    
+					    endY = (int)((height / 2) - ((height / 2) * ((frequency2 - frequency1) / absMax)));
+					    
+					    ig2.drawLine(prevX, prevY, endX, endY);
+					    
+					    prevX = endX;
+					    prevY = endY;
+					}
+			        
+			        File folder = new File("D:\\Uni\\Diplomarbeit\\Software\\samples\\spectrums\\sp-" + frames.get(i).getTimePosition());
 			        folder.mkdirs();			        
 			        
-				    ImageIO.write(bi, "BMP", new File("D:\\Uni\\Diplomarbeit\\Software\\samples\\frames\\spectrum-" + frames.get(i).getTimePosition() + "\\win-" + j + ".bmp"));
+				    ImageIO.write(bi, "BMP", new File("D:\\Uni\\Diplomarbeit\\Software\\samples\\spectrums\\sp-" + frames.get(i).getTimePosition() + "\\win-" + j + ".bmp"));
 				}
 			}
 				      
