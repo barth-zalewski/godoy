@@ -69,7 +69,47 @@ public class PitchAnalyzer {
 		else return false;
 	}
 	
+	public boolean isVoicedNext(double time) {	
+		time += timeStep();
+		
+		//Wegen Präzisionsfehler...
+		time = Math.round(time * 1000000.0) / 1000000.0;
+		if (pitches.get(time) != null) {
+			return pitches.get(time) != 0;
+		}
+		else return false;
+	}
+	
+	public boolean isVoiced2Next(double time) {		
+		time += 2 * timeStep();
+		
+		//Wegen Präzisionsfehler...
+		time = Math.round(time * 1000000.0) / 1000000.0;
+		if (pitches.get(time) != null) {
+			return pitches.get(time) != 0;
+		}
+		else return false;
+	}
+	
 	public double getPitch(double time) {
+		return pitches.get(time);
+	}
+	
+	public double getPitchNext(double time) {
+		time += timeStep();
+		
+		//Wegen Präzisionsfehler...
+		time = Math.round(time * 1000000.0) / 1000000.0;
+		
+		return pitches.get(time);
+	}
+	
+	public double getPitch2Next(double time) {
+		time += 2 * timeStep();
+		
+		//Wegen Präzisionsfehler...
+		time = Math.round(time * 1000000.0) / 1000000.0;
+		
 		return pitches.get(time);
 	}
 	

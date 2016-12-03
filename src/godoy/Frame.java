@@ -4,13 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import biz.source_code.dsp.filter.FilterCharacteristicsType;
-import biz.source_code.dsp.filter.FilterPassType;
-import biz.source_code.dsp.filter.IirFilter;
-import biz.source_code.dsp.filter.IirFilterCoefficients;
-import biz.source_code.dsp.filter.IirFilterDesignFisher;
-import biz.source_code.dsp.signal.EnvelopeDetector;
-
 import org.jtransforms.fft.DoubleFFT_1D;
 
 /**
@@ -18,205 +11,261 @@ import org.jtransforms.fft.DoubleFFT_1D;
  * frequency components of this frame are modifiable.
  */
 public class Frame {    
-    private double[] data, samples, allSamples;
-
+    private double[] data, allSamples;
+    
     /**
      * Optimierung: ein Map mit DCT-Instanzen und der Länge, die sie verarbeiten können
      */
     private static Map<Integer, DoubleFFT_1D> dctInstances = new HashMap<Integer, DoubleFFT_1D>();
     
-    private Map<Integer, double[]> sample1sByOffset = new HashMap<Integer, double[]>();
-    private Map<Integer, double[]> sample2sByOffset = new HashMap<Integer, double[]>();
+    private WindowFunction windowFuncSnapshot;
+    
+    private Map<Integer, double[]> snapshots1ByOffset = new HashMap<Integer, double[]>();
+    private Map<Integer, double[]> snapshots2ByOffset = new HashMap<Integer, double[]>();
     
     private Map<Integer, double[]> spectrum1sByOffset = new HashMap<Integer, double[]>();
     private Map<Integer, double[]> spectrum2sByOffset = new HashMap<Integer, double[]>();
     
+    private WindowFunction windowFuncWholeFrame;
+    private double[] wholeFrameSpectrum;
+    
     private final double windowDuration; //s
+    
     
     private double timePosition;
     
     private double pitch;
     
-    private EnvelopeDetector envelopeDetector;
-    
-    private float[] envelope;
+    private static final double DB_REFERENCE = 10;
     
     public Frame(double[] timeData, double pitch, float sampleRate) {
 
         int frameSize = timeData.length;
         this.pitch = pitch;
         
-        windowDuration = (1 / pitch) / 3; //GODOY
+        windowDuration = Math.max((1 / pitch) / 3, 0.0025); //GODOY
 
-        double[] allSamples = timeData.clone();
+        allSamples = timeData.clone();
         
-        int samplesPerWindow = (int)(sampleRate * windowDuration);
+        int samplesPerWindow = (int)(sampleRate * windowDuration), 
+        	samplesPerWindowHalf = (int)(samplesPerWindow / 2);
         
-
-        double lowerFilterCutoffFreq = 200;
-        double upperFilterCutoffFreq = 7000;
-        int filterOrder = 4;                                    // higher bandpass filter orders would be instable because of the small lower cutoff frequency
-        double filterRipple = -0.01;
-        double fcf1Rel = lowerFilterCutoffFreq / (int)Clip.getClassSamplingRate();
-        double fcf2Rel = upperFilterCutoffFreq / (int)Clip.getClassSamplingRate();
-        IirFilterCoefficients coeffs = IirFilterDesignFisher.design(FilterPassType.bandpass, FilterCharacteristicsType.chebyshev, filterOrder, filterRipple, fcf1Rel, fcf2Rel);
-        envelopeDetector = new EnvelopeDetector((int)Clip.getClassSamplingRate(), 0.00005, 0.003, new IirFilter(coeffs));
+        /* FFT für das gesamte Frame */
+        DoubleFFT_1D dct = getDctInstance(frameSize);
         
-        float[] allSamplesAsFloats = new float[timeData.length];
+        double[] wholeFrameSamples = timeData.clone();
+        windowFuncWholeFrame = new HammingWindowFunction(frameSize);
+        windowFuncWholeFrame.applyWindow(wholeFrameSamples);
         
-        for (int df = 0; df < timeData.length; df++) allSamplesAsFloats[df] = (float)allSamples[df];
+        double[] wholeFrameFFT = wholeFrameSamples.clone();       
+        dct.realForward(wholeFrameFFT); //Nur die Hälfte der FFT, negative Nyqist-Frequenz nicht dabei
         
-        envelope = envelopeDetector.process(allSamplesAsFloats);
+        double[] wholeFrameSpectrum = new double[(int)(wholeFrameFFT.length / 2)];
         
-        //System.out.println("allslen=" + allSamples.length + ", envlen=" + envelope.length);
-        
-        /* Das erste lokale Maximum finden */
-        int samplesPerPeriod = (int)((1 / pitch) * sampleRate);
-        
-        if (samplesPerPeriod > frameSize) {
-        	samplesPerPeriod = frameSize;
-        }                
-        
-        double maxSampleInPeriod = Double.NEGATIVE_INFINITY;
-        int positionOfLocalMaximum = -1;
-        
-        for (int i = 0; i < samplesPerPeriod; i++) {
-        	if (allSamples[i] > maxSampleInPeriod) {
-        		maxSampleInPeriod = allSamples[i];
-        		positionOfLocalMaximum = i;
-        	}
+        for (int ffti = 0; ffti < wholeFrameSpectrum.length; ffti++) {
+        	 double spectralValue = Math.sqrt(Math.pow(wholeFrameFFT[ffti * 2], 2) + Math.pow(wholeFrameFFT[ffti * 2 + 1], 2));
+        	 //in dB umrechnen
+        	 spectralValue = 20.0 * Math.log10(spectralValue / DB_REFERENCE);
+        	 wholeFrameSpectrum[ffti] = spectralValue;
         }
         
-        samples = new double[samplesPerPeriod];
-        this.allSamples = allSamples;
+        this.wholeFrameSpectrum = wholeFrameSpectrum;
         
-        double openPhaseMarginOffset = 0.22222222;
-                
-        //Nur verarbeiten, wenn eine ganze Periode im Frame
-        if (positionOfLocalMaximum >= samplesPerPeriod * openPhaseMarginOffset && positionOfLocalMaximum + samplesPerPeriod < allSamples.length) {
+        /* Das erste lokale Maximum finden - ENVELOPE - Todo. */        
+        
+//      int samplesPerPeriod = (int)((1 / pitch) * sampleRate);
+//        
+//      if (samplesPerPeriod > frameSize) {
+//      	samplesPerPeriod = frameSize;
+//      }                
+//      
+//      double maxSampleInPeriod = Double.NEGATIVE_INFINITY;
+//      int positionOfLocalMaximum = -1;
+//      
+//      for (int i = 0; i < samplesPerPeriod; i++) {
+//      	if (allSamples[i] > maxSampleInPeriod) {
+//      		maxSampleInPeriod = allSamples[i];
+//      		positionOfLocalMaximum = i;
+//      	}
+//      }
+//        
+        //Um welchen Teil der Periode soll das zweite Spektrum verschoben werden?
+        double secondSpectrumOffset = 0.5;
+        
+        /* FFT für Snapshots */
 
-        	//Die Variable "samples" repräsentiert nun eine ganze Periode, verschoben um openPhaseMarginOffset nach links
-        	for (int i = 0; i < samplesPerPeriod; i++) {                 	
-            	samples[i] = allSamples[i + positionOfLocalMaximum - (int)(openPhaseMarginOffset * samplesPerPeriod)];              	
-            }
+    	/* Nächste 2-er-Potenz finden für die FFT */
+    	int powerOfTwoExpI = 0;
+    	while (samplesPerWindow > Math.pow(2, powerOfTwoExpI)) {
+    		powerOfTwoExpI++;
+    	}
+    	
+    	int snapshotLengthZeroPadded = (int)(Math.pow(2, powerOfTwoExpI));
+    	
+        DoubleFFT_1D fftSnapshot = getDctInstance(snapshotLengthZeroPadded);
+        
+        // Fensterfunktion erzeugen
+        windowFuncSnapshot = new HammingWindowFunction(snapshotLengthZeroPadded);                   
+        
+        for (int i = samplesPerWindowHalf; i < frameSize - samplesPerWindowHalf - (int)((double)secondSpectrumOffset * samplesPerWindow); i++) {
+        	double[] snapshot1 = new double[samplesPerWindow],
+        			 snapshot2 = new double[samplesPerWindow];
         	
-        	//Mit wie vielen Nullen soll gepaddet werden? Die Zahl gibt an, wie viel mal die eigentliche Anzahl Samples erhöht werden soll    
-            int zeroPaddingLengthFactor = 5;            
-            
-            // Zur Anzahl der Samples passende Instanz der FFT-Funktion
-            DoubleFFT_1D dct = getDctInstance(samplesPerWindow * zeroPaddingLengthFactor);
+        	for (int j = 0; j < samplesPerWindow; j++) {
+        		snapshot1[j] = allSamples[i - samplesPerWindowHalf + j];
+        		snapshot2[j] = allSamples[i - samplesPerWindowHalf + j + (int)((double)secondSpectrumOffset * samplesPerWindow)];
+        	}        	
 
-            // Fensterfunktion erzeugen
-            WindowFunction windowFunc = new HammingWindowFunction(samplesPerWindow * zeroPaddingLengthFactor);            
-                        
-            // Um welchen Teil der Periode soll das zweite Spektrum verschoben werden?
-            double secondSpectrumOffset = 0.4;
-            
-            // Die Analyse erfolgt für alle Samples von j=0 bis j = samplesPerPeriod * 
-            for (int j = 0; j < samplesPerPeriod * secondSpectrumOffset - samplesPerWindow; j++) {
-            	double[] samples1 = new double[samplesPerWindow], 
-            	 		 samples2 = new double[samplesPerWindow];
-            	
-            	for (int z = 0; z < samplesPerWindow; z++) {
-            		samples1[z] = samples[z + j];            		
-            		samples2[z] = samples[z + j + (int)(samplesPerPeriod * secondSpectrumOffset)];
-            	}         
-            	
-            	//Zero-Padding vor oder nach Fensterfunktion?
-            	double[] samples1ZeroPadded = new double[samplesPerWindow * zeroPaddingLengthFactor],
-            			 samples2ZeroPadded = new double[samplesPerWindow * zeroPaddingLengthFactor];
-            	
-            	for (int z = 0; z < samplesPerWindow * zeroPaddingLengthFactor; z++) {
-            		if (z < samplesPerWindow) {
-            			samples1ZeroPadded[z] = samples1[z];
-            			samples2ZeroPadded[z] = samples2[z];
-            		}
-            		else {
-            			samples1ZeroPadded[z] = 0;
-            			samples2ZeroPadded[z] = 0;
-            		}
-            	}
-            
-            	windowFunc.applyWindow(samples1ZeroPadded);
-            	windowFunc.applyWindow(samples2ZeroPadded);
-            	
-            	sample1sByOffset.put(j, samples1ZeroPadded);
-            	sample2sByOffset.put(j, samples2ZeroPadded);
-            	
-            	double[] spectrum1 = samples1ZeroPadded.clone();
-            	double[] spectrum2 = samples2ZeroPadded.clone();
-            	
-            	// Transformieren
-            	dct.realForward(spectrum1);
-            	dct.realForward(spectrum2);
-            	
-            	// Das Spektrum aus den Daten extrahieren
-            	int sizeOfSpectrum = spectrum1.length % 2 == 0 ? /* gerade */ spectrum1.length / 2 : /* ungerade */ (spectrum1.length - 1) / 2;
-            	
-            	double[] calculatedSpectrum1 = new double[sizeOfSpectrum - 1],
-            			 calculatedSpectrum2 = new double[sizeOfSpectrum - 1];
-            	
-            	for (int s = 1; s < sizeOfSpectrum; s++) {
-            		double re1 = spectrum1[2 * s],
-            			   im1 = spectrum1[2 * s + 1],
-            			   mag1 = Math.sqrt(re1 * re1 + im1 * im1),
-            			   re2 = spectrum2[2 * s],
-                    	   im2 = spectrum2[2 * s + 1],
-                    	   mag2 = Math.sqrt(re2 * re2 + im2 * im2);
-            		
-            		calculatedSpectrum1[s - 1] = mag1;
-            		calculatedSpectrum2[s - 1] = mag2;
-            			   
-            	}            	
-
-            	//Nur interessierende Frequenzen beachten
-            	ArrayList<Double> relevantSpectrums1 = new ArrayList<Double>(),
-            			   		  relevantSpectrums2 = new ArrayList<Double>();
-            	
-            	int minFrequency = 3000, //Hz
-            		maxFrequency = 8000, //Hz          
-            		k = 1,
-            		currentFrequency = (int)(1.0 * Clip.getClassSamplingRate() / samples1ZeroPadded.length);    
-            	
-            	double basisLevel = 100.0;
-            	
-            	while (currentFrequency < maxFrequency) {
-            		if (currentFrequency > minFrequency) {
-            			//in dB umrechnen            			       
-            			double cs1 = 20.0 * Math.log10(calculatedSpectrum1[k - 1] / basisLevel), 
-            				   cs2 = 20.0 * Math.log10(calculatedSpectrum2[k - 1] / basisLevel);            			
-            			
-            			relevantSpectrums1.add(cs1);
-            			relevantSpectrums2.add(cs2);
-            			
-            			//System.out.println("f=" + currentFrequency + " Hz, cs1=" + cs1 + " dB, cs2=" + cs2 + " dB");
-            		}
-            		k++;
-            		currentFrequency += (int)(Clip.getClassSamplingRate() / samples1ZeroPadded.length);
-            	}
-            	
-            	calculatedSpectrum1 = new double[relevantSpectrums1.size()];
-            	calculatedSpectrum2 = new double[relevantSpectrums2.size()];
-            	
-            	int sz = 0;
-            	
-            	for (double rs : relevantSpectrums1) {
-            		calculatedSpectrum1[sz] = rs;
-            		sz++;
-            	}
-            	
-            	sz = 0;
-            	
-            	for (double rs : relevantSpectrums2) {
-            		calculatedSpectrum2[sz] = rs;
-            		sz++;
-            	}
-            	
-            	spectrum1sByOffset.put(j, calculatedSpectrum1);
-            	spectrum2sByOffset.put(j, calculatedSpectrum2);
-            }            
-            
+        	double[] snapshot1ZeroPadded = new double[snapshotLengthZeroPadded],
+       			 snapshot2ZeroPadded = new double[snapshotLengthZeroPadded];
+        	
+        	for (int zi = 0; zi < snapshotLengthZeroPadded; zi++) {
+        		snapshot1ZeroPadded[zi] = zi < samplesPerWindow ? snapshot1[zi] : 0;
+        		snapshot2ZeroPadded[zi] = zi < samplesPerWindow ? snapshot2[zi] : 0;
+        	}
+        	
+        	windowFuncSnapshot.applyWindow(snapshot1ZeroPadded);
+        	windowFuncSnapshot.applyWindow(snapshot2ZeroPadded);
+        	
+        	snapshots1ByOffset.put(i, snapshot1ZeroPadded);
+        	snapshots2ByOffset.put(i, snapshot2ZeroPadded);
+        	
+        	double[] snapshot1fft = snapshot1ZeroPadded.clone(),
+        			 snapshot2fft = snapshot2ZeroPadded.clone();
+        	
+        	fftSnapshot.realForward(snapshot1fft);
+        	fftSnapshot.realForward(snapshot2fft);
+        	
         }
+         
+//        
+//        double openPhaseMarginOffset = 0.22222222;
+//                
+//        //Nur verarbeiten, wenn eine ganze Periode im Frame
+//        if (positionOfLocalMaximum >= samplesPerPeriod * openPhaseMarginOffset && positionOfLocalMaximum + samplesPerPeriod < allSamples.length) {
+//
+//        	//Die Variable "samples" repräsentiert nun eine ganze Periode, verschoben um openPhaseMarginOffset nach links
+//        	for (int i = 0; i < samplesPerPeriod; i++) {                 	
+//            	samples[i] = allSamples[i + positionOfLocalMaximum - (int)(openPhaseMarginOffset * samplesPerPeriod)];              	
+//            }
+//        	
+//        	//Mit wie vielen Nullen soll gepaddet werden? Die Zahl gibt an, wie viel mal die eigentliche Anzahl Samples erhöht werden soll    
+//            int zeroPaddingLengthFactor = 0;            
+//            
+//            // Zur Anzahl der Samples passende Instanz der FFT-Funktion
+//            DoubleFFT_1D dct = getDctInstance(samplesPerWindow * zeroPaddingLengthFactor);
+//
+//            // Fensterfunktion erzeugen
+//            WindowFunction windowFunc = new HammingWindowFunction(samplesPerWindow * zeroPaddingLengthFactor);            
+//                        
+//            // Um welchen Teil der Periode soll das zweite Spektrum verschoben werden?
+//            double secondSpectrumOffset = 0.4;
+//            
+//            // Die Analyse erfolgt für alle Samples von j=0 bis j = samplesPerPeriod * 
+//            for (int j = 0; j < samplesPerPeriod * secondSpectrumOffset - samplesPerWindow; j++) {
+//            	double[] samples1 = new double[samplesPerWindow], 
+//            	 		 samples2 = new double[samplesPerWindow];
+//            	
+//            	for (int z = 0; z < samplesPerWindow; z++) {
+//            		samples1[z] = samples[z + j];            		
+//            		samples2[z] = samples[z + j + (int)(samplesPerPeriod * secondSpectrumOffset)];
+//            	}         
+//            	
+//            	//Zero-Padding vor oder nach Fensterfunktion?
+//            	double[] samples1ZeroPadded = new double[samplesPerWindow * zeroPaddingLengthFactor],
+//            			 samples2ZeroPadded = new double[samplesPerWindow * zeroPaddingLengthFactor];
+//            	
+//            	for (int z = 0; z < samplesPerWindow * zeroPaddingLengthFactor; z++) {
+//            		if (z < samplesPerWindow) {
+//            			samples1ZeroPadded[z] = samples1[z];
+//            			samples2ZeroPadded[z] = samples2[z];
+//            		}
+//            		else {
+//            			samples1ZeroPadded[z] = 0;
+//            			samples2ZeroPadded[z] = 0;
+//            		}
+//            	}
+//            
+//            	windowFunc.applyWindow(samples1ZeroPadded);
+//            	windowFunc.applyWindow(samples2ZeroPadded);
+//            	
+//            	sample1sByOffset.put(j, samples1ZeroPadded);
+//            	sample2sByOffset.put(j, samples2ZeroPadded);
+//            	
+//            	double[] spectrum1 = samples1ZeroPadded.clone();
+//            	double[] spectrum2 = samples2ZeroPadded.clone();
+//            	
+//            	// Transformieren
+//            	dct.realForward(spectrum1);
+//            	dct.realForward(spectrum2);
+//            	
+//            	// Das Spektrum aus den Daten extrahieren
+//            	int sizeOfSpectrum = spectrum1.length % 2 == 0 ? /* gerade */ spectrum1.length / 2 : /* ungerade */ (spectrum1.length - 1) / 2;
+//            	
+//            	double[] calculatedSpectrum1 = new double[sizeOfSpectrum - 1],
+//            			 calculatedSpectrum2 = new double[sizeOfSpectrum - 1];
+//            	
+//            	for (int s = 1; s < sizeOfSpectrum; s++) {
+//            		double re1 = spectrum1[2 * s],
+//            			   im1 = spectrum1[2 * s + 1],
+//            			   mag1 = Math.sqrt(re1 * re1 + im1 * im1),
+//            			   re2 = spectrum2[2 * s],
+//                    	   im2 = spectrum2[2 * s + 1],
+//                    	   mag2 = Math.sqrt(re2 * re2 + im2 * im2);
+//            		
+//            		calculatedSpectrum1[s - 1] = mag1;
+//            		calculatedSpectrum2[s - 1] = mag2;
+//            			   
+//            	}            	
+//
+//            	//Nur interessierende Frequenzen beachten
+//            	ArrayList<Double> relevantSpectrums1 = new ArrayList<Double>(),
+//            			   		  relevantSpectrums2 = new ArrayList<Double>();
+//            	
+//            	int minFrequency = 3000, //Hz
+//            		maxFrequency = 8000, //Hz          
+//            		k = 1,
+//            		currentFrequency = (int)(1.0 * Clip.getClassSamplingRate() / samples1ZeroPadded.length);    
+//            	
+//            	double basisLevel = 100.0;
+//            	
+//            	while (currentFrequency < maxFrequency) {
+//            		if (currentFrequency > minFrequency) {
+//            			//in dB umrechnen            			       
+//            			double cs1 = 20.0 * Math.log10(calculatedSpectrum1[k - 1] / basisLevel), 
+//            				   cs2 = 20.0 * Math.log10(calculatedSpectrum2[k - 1] / basisLevel);            			
+//            			
+//            			relevantSpectrums1.add(cs1);
+//            			relevantSpectrums2.add(cs2);
+//            			
+//            			//System.out.println("f=" + currentFrequency + " Hz, cs1=" + cs1 + " dB, cs2=" + cs2 + " dB");
+//            		}
+//            		k++;
+//            		currentFrequency += (int)(Clip.getClassSamplingRate() / samples1ZeroPadded.length);
+//            	}
+//            	
+//            	calculatedSpectrum1 = new double[relevantSpectrums1.size()];
+//            	calculatedSpectrum2 = new double[relevantSpectrums2.size()];
+//            	
+//            	int sz = 0;
+//            	
+//            	for (double rs : relevantSpectrums1) {
+//            		calculatedSpectrum1[sz] = rs;
+//            		sz++;
+//            	}
+//            	
+//            	sz = 0;
+//            	
+//            	for (double rs : relevantSpectrums2) {
+//            		calculatedSpectrum2[sz] = rs;
+//            		sz++;
+//            	}
+//            	
+//            	spectrum1sByOffset.put(j, calculatedSpectrum1);
+//            	spectrum2sByOffset.put(j, calculatedSpectrum2);
+//            }            
+//            
+//        }
         
     }
 
@@ -236,21 +285,28 @@ public class Frame {
     public double getData(int idx) {
         return data[idx];
     }
-    
-    public double[] getSamples() {
-    	return samples;
-    }
-    
+        
+    /* ANALYSE DES VOLLSTÄNDIGEN FRAMES */
     public double[] getAllSamples() {
     	return allSamples;
     }
     
-    public Map<Integer, double[]> getWindowedSamples1() {
-    	return sample1sByOffset;    	
+    public double[] getWholeFrameSpectrum() {
+    	return wholeFrameSpectrum;
     }
     
-    public Map<Integer, double[]> getWindowedSamples2() {
-    	return sample2sByOffset;    	
+    public WindowFunction getWindowFuncWholeFrame() {
+    	return windowFuncWholeFrame;
+    }
+    
+    
+    /* ULTRAKURZZEITANALYSE */
+    public Map<Integer, double[]> getSnapshots1() {
+    	return snapshots1ByOffset;    	
+    }
+    
+    public Map<Integer, double[]> getSnapshots2() {
+    	return snapshots2ByOffset;    	
     }
     
     public Map<Integer, double[]> getSpectrums1() {
@@ -267,10 +323,6 @@ public class Frame {
     
     public double getTimePosition() {
     	return timePosition;
-    }
-    
-    public float[] getEnvelope() {
-    	return envelope;
-    }
+    }    
 
 }

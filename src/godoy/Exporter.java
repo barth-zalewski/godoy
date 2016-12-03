@@ -26,43 +26,10 @@ public class Exporter {
 	public Exporter(List<Frame> data) {
 		frames = data;
 	}
-	
-	/* Exportiert ein Mischmasch an Daten */
-	public void exportAsTXT() {
-		BufferedWriter writer = null;
-        try {        
-            File logFile = new File("D:\\Uni\\Diplomarbeit\\Software\\samples", "export.txt");
-            writer = new BufferedWriter(new FileWriter(logFile));
-            writer.write("Export\r\n");
-            writer.write("===========\r\n");
-            
-            for (int i = 0; i < frames.size(); i++) {
-            	writer.write("Frame t = " + frames.get(i).getTimePosition() + "\r\n");
-            	double[] samples = frames.get(i).getSamples();
-            	
-            	for (int s = 0; s < samples.length; s++) {
-            		writer.write(samples[s] + "\r\n");
-            	}
-            	
-            	writer.write("\r\n");
-            }
-        } 
-        catch (Exception e) {
-            e.printStackTrace();
-        } 
-        finally {
-            try {                
-                writer.close();
-            } 
-            catch (Exception e) { }
-        }
 
-	}
-	
-	public void exportFramesSamples() {
-		try {
-			int maxTrim = 99999999;
-			
+	/* Exportiert ein Frame, die dazugehörige Fensterfunktion und das Spektrum */
+	public void exportFrames() {
+		try {			
 			for (int i = 0; i < frames.size(); i++) {
 				double[] samples = frames.get(i).getAllSamples();
 				
@@ -80,21 +47,19 @@ public class Exporter {
 				
 				double absMax = Math.max(Math.abs(min), Math.abs(max));
 				
-				if (absMax > maxTrim) absMax = maxTrim;
-				
 				/* 3 Pixel pro Sample */
 				int pixelsPerSample = 3,
 				    width = samples.length * pixelsPerSample,
 				    height = 201;							
 				
-				BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+				BufferedImage bi = new BufferedImage(width, 2 * height, BufferedImage.TYPE_INT_RGB);
 				
 			    Graphics2D ig2 = bi.createGraphics();
 		
 		        ig2.setPaint(Color.white);
 		        ig2.setColor(Color.white);
 			    
-			    ig2.fillRect(0, 0, width - 1, height - 1);
+			    ig2.fillRect(0, 0, width - 1, 2 * height - 1);
 			    
 			    //Horizontale Achse hinzufügen
 			    ig2.setPaint(Color.gray);
@@ -107,10 +72,33 @@ public class Exporter {
 				    int endX = s * pixelsPerSample, 
 				    	endY;
 				    
-				    double sample = samples[s];
+				    double sample = samples[s];				    
 				    
-				    if (sample > maxTrim) sample = maxTrim;
-				    if (sample < -maxTrim) sample = -maxTrim;
+				    endY = (int)((height / 2) - ((height / 2) * (sample / absMax)));
+				    
+				    ig2.drawLine(prevX, prevY, endX, endY);
+				    
+				    prevX = endX;
+				    prevY = endY;
+				}
+		        
+		        //Fenster hinzufügen
+		        double[] window = new double[samples.length];
+		        for (int wi = 0; wi < window.length; wi++) {
+		        	window[wi] = absMax;
+		        }
+		        frames.get(i).getWindowFuncWholeFrame().applyWindow(window);
+		        
+		        prevX = 0;
+		        prevY = height / 2;
+		        
+		        ig2.setPaint(Color.orange);
+		        
+		        for (int s = 0; s < window.length; s++) {					
+				    int endX = s * pixelsPerSample, 
+				    	endY;
+				    
+				    double sample = window[s];				    
 				    
 				    endY = (int)((height / 2) - ((height / 2) * (sample / absMax)));
 				    
@@ -121,23 +109,47 @@ public class Exporter {
 				}
 		        
 		        //Envelope hinzufügen
+//		        prevX = 0;
+//		        prevY = height / 2;
+//		        
+//		        ig2.setPaint(Color.magenta);
+		        
+		        //Trennlinie hinzufügen
+		        ig2.setPaint(Color.black);
+		        ig2.drawLine(0, height, width, height);
+		        
+		        //Spektrum hinzufügen
+		        //Achse hinzufügen
+		        ig2.setPaint(Color.gray);
+		        ig2.drawLine(0, height + height / 2, width, height + height / 2);
+		        
 		        prevX = 0;
-		        prevY = height / 2;
+		        prevY = height + height / 2;
 		        
-		        ig2.setPaint(Color.magenta);
+		        ig2.setPaint(Color.blue);
 		        
-		        float[] envelope = frames.get(i).getEnvelope();
+		        double[] spectrum = frames.get(i).getWholeFrameSpectrum();
 		        
-		        for (int s = 0; s < envelope.length; s++) {					
-				    int endX = s * pixelsPerSample, 
+		        double spectrumMin = Double.POSITIVE_INFINITY, spectrumMax = Double.NEGATIVE_INFINITY;
+				
+				for (int s = 0; s < spectrum.length; s++) {					
+				    if (spectrum[s] < spectrumMin) {
+				    	spectrumMin = spectrum[s];
+				    }
+				    if (spectrum[s] > spectrumMax) {
+				    	spectrumMax = spectrum[s];
+				    }
+				}
+				
+				double spectrumAbsMax = Math.max(Math.abs(spectrumMin), Math.abs(spectrumMax));
+				
+				for (int s = 0; s < spectrum.length; s++) {					
+				    int endX = s * pixelsPerSample * 2, //2, da FFT um die Hälfte kürzer ist als das Input 
 				    	endY;
 				    
-				    float envelopeVertex = envelope[s];
+				    double sample = spectrum[s];				    
 				    
-				    if (envelopeVertex > maxTrim) envelopeVertex = maxTrim;
-				    if (envelopeVertex < -maxTrim) envelopeVertex = -maxTrim;
-				    
-				    endY = (int)((height / 2) - ((height / 2) * (envelopeVertex / absMax)));
+				    endY = (int)(height + (height / 2) - ((height / 2) * (sample / spectrumAbsMax)));
 				    
 				    ig2.drawLine(prevX, prevY, endX, endY);
 				    
@@ -145,7 +157,7 @@ public class Exporter {
 				    prevY = endY;
 				}
 		        
-			    ImageIO.write(bi, "BMP", new File("D:\\Uni\\Diplomarbeit\\Software\\samples\\frames\\fr-" + frames.get(i).getTimePosition() + ".bmp"));
+			    ImageIO.write(bi, "BMP", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\frames\\fr-" + frames.get(i).getTimePosition() + ".bmp"));
 			}
 				      
 	    } catch (IOException ie) {
@@ -160,8 +172,8 @@ public class Exporter {
 			int maxTrim = 99999999;
 			
 			for (int i = 0; i < frames.size(); i++) {
-				Map<Integer, double[]> windowedSamples1 = frames.get(i).getWindowedSamples1();
-				Map<Integer, double[]> windowedSamples2 = frames.get(i).getWindowedSamples2();
+				Map<Integer, double[]> windowedSamples1 = frames.get(i).getSnapshots1();
+				Map<Integer, double[]> windowedSamples2 = frames.get(i).getSnapshots2();
 				
 				int numberOfWindows = windowedSamples1.size();
 				

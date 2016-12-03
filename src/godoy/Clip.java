@@ -24,9 +24,11 @@ public class Clip {
     /**
      * Nur mit diesem Format können wir arbeiten.
      */
-    private static final AudioFormat AUDIO_FORMAT = new AudioFormat(44100, 16, 1, true, true);
+    private static final AudioFormat AUDIO_FORMAT = new AudioFormat(16000, 16, 1, true, true);
 
-    private static final int DEFAULT_FRAME_SIZE = 1323; //30 ms Frame 
+    private static final int DEFAULT_FRAME_SIZE = 480; //30 ms Frame
+    
+    private static final int DEFAULT_FRAME_SIZE_ZEROPADDED = 512;
     
     private final List<Frame> frames = new ArrayList<Frame>();
     
@@ -53,12 +55,12 @@ public class Clip {
         /* Pitch-Listing abarbeiten */
         pitchAnalyzer = new PitchAnalyzer(pitchListingFile);
         
-        frameSize = (int) (pitchAnalyzer.timeStep() * AUDIO_FORMAT.getSampleRate());
+        frameSize = DEFAULT_FRAME_SIZE;
+        
+        int frameSizeZeropadded = DEFAULT_FRAME_SIZE_ZEROPADDED;
         
         byte[] buf = new byte[frameSize * 2]; // 16-bit Monosamples
         int n;
-        
-//        in.mark(buf.length * 2); // Probably not needed
         
         double timeCounter = pitchAnalyzer.initialTime();
         
@@ -73,31 +75,34 @@ public class Clip {
                 }
             }
             
-            /* Frame zur Analyse nur erzeugen, wenn stimmhaft */
-            if (pitchAnalyzer.isVoiced(timeCounter)) {            
-	            double[] samples = new double[frameSize];
-	            for (int i = 0; i < frameSize; i++) {
-	                int hi = buf[2 * i];
-	                int low = buf[2 * i + 1] & 0xff;
+            /* Frame zur Analyse nur erzeugen, wenn alle 3 Steps stimmhaft */
+            if (pitchAnalyzer.isVoiced(timeCounter) && pitchAnalyzer.isVoicedNext(timeCounter) && pitchAnalyzer.isVoiced2Next(timeCounter)) {            
+	            double[] samples = new double[frameSizeZeropadded];
+	            int isamp = 0;
+	            for (; isamp < frameSize; isamp++) {
+	                int hi = buf[2 * isamp];
+	                int low = buf[2 * isamp + 1] & 0xff;
 	                int sampVal = (hi << 8) | low;            	
-	                samples[i] = sampVal;
+	                samples[isamp] = sampVal;
 	            }
 	            
-	            Frame fr = new Frame(samples, pitchAnalyzer.getPitch(timeCounter), AUDIO_FORMAT.getSampleRate());
+	            for (; isamp < frameSizeZeropadded; isamp++) {
+	            	samples[isamp] = 0;
+	            }
+	            
+	            double meanPitch = (pitchAnalyzer.getPitch(timeCounter) + pitchAnalyzer.getPitchNext(timeCounter) + pitchAnalyzer.getPitch2Next(timeCounter)) / 3;
+	            
+	            Frame fr = new Frame(samples, meanPitch, AUDIO_FORMAT.getSampleRate());
 	            fr.setTimePosition(timeCounter);
 	            
 	            frames.add(fr);
             }
             
-            timeCounter += pitchAnalyzer.timeStep();
+            timeCounter += 3 * pitchAnalyzer.timeStep(); //3, weil 30 ms für Analyse und 10 ms Praatausgabe
             
             //Wegen der Präzisionfehler...
             timeCounter = Math.round(timeCounter * 1000000.0) / 1000000.0;
-            
-//            in.reset();      // Probably not needed
-//            long bytesToSkip = frameSize * 2; // Probably not needed
-//            in.skip(bytesToSkip); // Probably not needed
-//            in.mark(buf.length * 2);        // Probably not needed         
+                 
         }
         
 //        Frame someFrame = frames.get(25);

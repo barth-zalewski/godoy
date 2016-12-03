@@ -9,14 +9,14 @@ public class godoy {
 		System.out.println("Programm startet.");
 		
 		/* Audio-Datei öffnen */
-		File wavFile = new File("D:\\Uni\\Diplomarbeit\\Software\\samples", "ldc93.wav");
+		File wavFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", "male1-sa2.wav");
 		/* Pitch-Listing-Datei öffnen */
-		File pitchListingFile = new File("D:\\Uni\\Diplomarbeit\\Software\\samples", "ldc93-pitch-listing.txt");
+		File pitchListingFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", "male1-sa2.txt");
 		
 		try {
 			Clip clip = Clip.newInstance(wavFile, pitchListingFile);
 			//clip.getExporter().exportAsTXT();
-			clip.getExporter().exportFramesSamples();
+			//clip.getExporter().exportFrames();
 			//clip.getExporter().exportFramesWindowedSamples();
 			//clip.getExporter().exportSpectrums();
 		}
