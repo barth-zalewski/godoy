@@ -31,10 +31,15 @@ public class Frame {
     
     private final double windowDuration; //s
     
+    private int samplesPerWindow;
     
     private double timePosition;
     
     private double pitch;
+    
+    private int samplesPerPeriod;
+    
+    private double secondSpectrumOffset;
     
     private static final double DB_REFERENCE = 10;
     
@@ -47,8 +52,11 @@ public class Frame {
 
         allSamples = timeData.clone();
         
-        int samplesPerWindow = (int)(sampleRate * windowDuration), 
-        	samplesPerWindowHalf = (int)(samplesPerWindow / 2);
+        samplesPerWindow = (int)(sampleRate * windowDuration);
+        
+        samplesPerPeriod = (int)((1 / pitch) * sampleRate);
+        
+        int samplesPerWindowHalf = (int)(samplesPerWindow / 2);
         
         /* FFT für das gesamte Frame */
         DoubleFFT_1D dct = getDctInstance(frameSize);
@@ -90,7 +98,7 @@ public class Frame {
 //      }
 //        
         //Um welchen Teil der Periode soll das zweite Spektrum verschoben werden?
-        double secondSpectrumOffset = 0.5;
+        secondSpectrumOffset = 0.5;
         
         /* FFT für Snapshots */
 
@@ -107,13 +115,13 @@ public class Frame {
         // Fensterfunktion erzeugen
         windowFuncSnapshot = new HammingWindowFunction(snapshotLengthZeroPadded);                   
         
-        for (int i = samplesPerWindowHalf; i < frameSize - samplesPerWindowHalf - (int)((double)secondSpectrumOffset * samplesPerWindow); i++) {
+        for (int i = samplesPerWindowHalf; i < frameSize - samplesPerWindowHalf - (int)((double)secondSpectrumOffset * samplesPerPeriod); i++) {
         	double[] snapshot1 = new double[samplesPerWindow],
         			 snapshot2 = new double[samplesPerWindow];
         	
         	for (int j = 0; j < samplesPerWindow; j++) {
         		snapshot1[j] = allSamples[i - samplesPerWindowHalf + j];
-        		snapshot2[j] = allSamples[i - samplesPerWindowHalf + j + (int)((double)secondSpectrumOffset * samplesPerWindow)];
+        		snapshot2[j] = allSamples[i - samplesPerWindowHalf + j + (int)((double)secondSpectrumOffset * samplesPerPeriod)];
         	}        	
 
         	double[] snapshot1ZeroPadded = new double[snapshotLengthZeroPadded],
@@ -127,8 +135,8 @@ public class Frame {
         	windowFuncSnapshot.applyWindow(snapshot1ZeroPadded);
         	windowFuncSnapshot.applyWindow(snapshot2ZeroPadded);
         	
-        	snapshots1ByOffset.put(i, snapshot1ZeroPadded);
-        	snapshots2ByOffset.put(i, snapshot2ZeroPadded);
+        	snapshots1ByOffset.put(i - samplesPerWindowHalf, snapshot1ZeroPadded);
+        	snapshots2ByOffset.put(i - samplesPerWindowHalf, snapshot2ZeroPadded);        	
         	
         	double[] snapshot1fft = snapshot1ZeroPadded.clone(),
         			 snapshot2fft = snapshot2ZeroPadded.clone();
@@ -136,6 +144,23 @@ public class Frame {
         	fftSnapshot.realForward(snapshot1fft);
         	fftSnapshot.realForward(snapshot2fft);
         	
+        	double[] snapshot1Spectrum = new double[(int)(snapshot1fft.length / 2)],
+        			 snapshot2Spectrum = new double[(int)(snapshot2fft.length / 2)];
+        	
+        	for (int ffti = 0; ffti < snapshot1Spectrum.length; ffti++) {
+            	 double spectralValue1 = Math.sqrt(Math.pow(snapshot1fft[ffti * 2], 2) + Math.pow(snapshot1fft[ffti * 2 + 1], 2));
+            	 //in dB umrechnen
+            	 spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
+            	 snapshot1Spectrum[ffti] = spectralValue1;
+            	 
+            	 double spectralValue2 = Math.sqrt(Math.pow(snapshot2fft[ffti * 2], 2) + Math.pow(snapshot2fft[ffti * 2 + 1], 2));
+            	 //in dB umrechnen
+            	 spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
+            	 snapshot2Spectrum[ffti] = spectralValue2;
+            }
+        	
+        	spectrum1sByOffset.put(i - samplesPerWindowHalf, snapshot1Spectrum);
+        	spectrum2sByOffset.put(i - samplesPerWindowHalf, snapshot2Spectrum);
         }
          
 //        
@@ -323,6 +348,22 @@ public class Frame {
     
     public double getTimePosition() {
     	return timePosition;
-    }    
+    }  
+    
+    public int getSamplesPerWindow() {
+    	return samplesPerWindow;
+    }
+    
+    public int getSamplesPerPeriod() {
+    	return samplesPerPeriod;
+    }
+    
+    public double getSecondSpectrumOffset() {
+    	return secondSpectrumOffset;
+    }
+    
+    public WindowFunction getWindowFuncSnapshot() {
+    	return windowFuncSnapshot;
+    }
 
 }

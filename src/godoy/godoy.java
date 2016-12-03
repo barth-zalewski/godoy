@@ -17,7 +17,7 @@ public class godoy {
 			Clip clip = Clip.newInstance(wavFile, pitchListingFile);
 			//clip.getExporter().exportAsTXT();
 			//clip.getExporter().exportFrames();
-			//clip.getExporter().exportFramesWindowedSamples();
+			clip.getExporter().exportFramesWindowedSamples();
 			//clip.getExporter().exportSpectrums();
 		}
 		catch (Exception ex) {
