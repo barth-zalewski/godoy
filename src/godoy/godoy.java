@@ -9,9 +9,9 @@ public class godoy {
 		System.out.println("Programm startet.");
 		
 		/* Audio-Datei öffnen */
-		File wavFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", "male1-sa2.wav");
+		File wavFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", "test2.wav");
 		/* Pitch-Listing-Datei öffnen */
-		File pitchListingFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", "male1-sa2.txt");
+		File pitchListingFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", "test2.txt");
 		
 		try {
 			Clip clip = Clip.newInstance(wavFile, pitchListingFile);

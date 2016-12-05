@@ -451,10 +451,12 @@ public class Exporter {
 			        File folder = new File("D:\\Uni\\Diplomarbeit\\Software\\output\\snapshots\\fr-" + frames.get(i).getTimePosition());
 			        folder.mkdirs();			        
 			        
-				    ImageIO.write(bi, "BMP", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\snapshots\\fr-" + frames.get(i).getTimePosition() + "\\win-" + j + ".bmp"));
+				    ImageIO.write(bi, "PNG", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\snapshots\\fr-" + frames.get(i).getTimePosition() + "\\win-" + j + ".png"));
+				    
+				    if (j == 3) break;
 				}
 				
-				break;
+				if (i == 0) break;
 			}
 				      
 	    } catch (IOException ie) {
@@ -463,124 +465,4 @@ public class Exporter {
 	    }
 	}
 	
-	public void exportSpectrums() {
-		try {						
-			for (int i = 0; i < frames.size(); i++) {
-				Map<Integer, double[]> spectrums1 = frames.get(i).getSpectrums1();
-				Map<Integer, double[]> spectrums2 = frames.get(i).getSpectrums2();
-				
-				int numberOfWindows = spectrums1.size();
-				
-				for (int j = 0; j < numberOfWindows; j++) {
-					double[] spectrum1 = spectrums1.get(j);
-					double[] spectrum2 = spectrums2.get(j);
-					
-					/* Zuerst kleinsten und größten Sample finden */
-					double min = Double.POSITIVE_INFINITY, max = Double.NEGATIVE_INFINITY;
-					
-					for (int s = 0; s < spectrum1.length; s++) {					
-					    if (spectrum1[s] < min) {
-					    	min = spectrum1[s];
-					    }
-					    if (spectrum1[s] > max) {
-					    	max = spectrum1[s];
-					    }
-					    if (spectrum2[s] < min) {
-					    	min = spectrum2[s];
-					    }
-					    if (spectrum2[s] > max) {
-					    	max = spectrum2[s];
-					    }
-					}
-					
-					double absMax = Math.max(Math.abs(min), Math.abs(max));
-					
-					/* 3 Pixel pro Sample */
-					int pixelsPerFrequency = 20,
-					    width = spectrum1.length * pixelsPerFrequency,
-					    height = 301;							
-					
-					BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-					
-				    Graphics2D ig2 = bi.createGraphics();
-			
-			        ig2.setPaint(Color.white);
-			        ig2.setColor(Color.white);
-				    
-				    ig2.fillRect(0, 0, width - 1, height - 1);
-				    
-				    //Horizontale Achse hinzufügen
-				    ig2.setPaint(Color.gray);
-			        ig2.drawLine(0, height / 2, width, height / 2);
-			        
-			        //Samples malen
-			        int prevX = 0, prevY = height / 2;
-			        
-			        ig2.setPaint(Color.yellow);
-			        
-			        for (int s = 0; s < spectrum1.length; s++) {				        	
-					    int endX = s * pixelsPerFrequency, 
-					    	endY;
-					    
-					    double frequency = spectrum1[s];					    
-					    
-					    endY = (int)((height / 2) - ((height / 2) * (frequency / absMax)));
-					    
-					    ig2.drawLine(prevX, prevY, endX, endY);
-					    
-					    prevX = endX;
-					    prevY = endY;
-					}
-			        
-			        prevX = 0;
-			        prevY = height / 2;
-			        
-			        ig2.setPaint(Color.red);
-			        
-			        for (int s = 0; s < spectrum2.length; s++) {				        	
-					    int endX = s * pixelsPerFrequency, 
-					    	endY;
-					    
-					    double frequency = spectrum2[s];
-					    
-					    endY = (int)((height / 2) - ((height / 2) * (frequency / absMax)));
-					    
-					    ig2.drawLine(prevX, prevY, endX, endY);
-					    
-					    prevX = endX;
-					    prevY = endY;
-					}
-			        
-			        //Differenz malen
-			        prevX = 0;
-			        prevY = height / 2;
-			        
-			        ig2.setPaint(Color.black);
-			        
-			        for (int s = 0; s < spectrum1.length; s++) {				        	
-					    int endX = s * pixelsPerFrequency, 
-					    	endY;
-					    
-					    double frequency1 = spectrum1[s], frequency2 = spectrum2[s];
-					    
-					    endY = (int)((height / 2) - ((height / 2) * ((frequency2 - frequency1) / absMax)));
-					    
-					    ig2.drawLine(prevX, prevY, endX, endY);
-					    
-					    prevX = endX;
-					    prevY = endY;
-					}
-			        
-			        File folder = new File("D:\\Uni\\Diplomarbeit\\Software\\samples\\spectrums\\sp-" + frames.get(i).getTimePosition());
-			        folder.mkdirs();			        
-			        
-				    ImageIO.write(bi, "BMP", new File("D:\\Uni\\Diplomarbeit\\Software\\samples\\spectrums\\sp-" + frames.get(i).getTimePosition() + "\\win-" + j + ".bmp"));
-				}
-			}
-				      
-	    } catch (IOException ie) {
-	      logger.info("Bild nicht gespeichert");
-	      ie.printStackTrace();
-	    }
-	}
 }
