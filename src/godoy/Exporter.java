@@ -453,10 +453,10 @@ public class Exporter {
 			        
 				    ImageIO.write(bi, "PNG", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\snapshots\\fr-" + frames.get(i).getTimePosition() + "\\win-" + j + ".png"));
 				    
-				    if (j == 3) break;
+				    //if (j == 3) break;
 				}
 				
-				if (i == 0) break;
+				//if (i == 0) break;
 			}
 				      
 	    } catch (IOException ie) {

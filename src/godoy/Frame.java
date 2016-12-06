@@ -41,7 +41,7 @@ public class Frame {
     
     private double secondSpectrumOffset;
     
-    private static final double DB_REFERENCE = 0.001;
+    private static final double DB_REFERENCE = 1E3;
     
     public Frame(double[] timeData, double pitch, float sampleRate) {
 
@@ -108,7 +108,7 @@ public class Frame {
     		powerOfTwoExpI++;
     	}
     	
-    	int snapshotLengthZeroPadded = (int)(Math.pow(2, powerOfTwoExpI));
+    	int snapshotLengthZeroPadded = 512; //(int)(Math.pow(2, powerOfTwoExpI + 2));
     	
         DoubleFFT_1D fftSnapshot = getDctInstance(snapshotLengthZeroPadded);
         
@@ -130,10 +130,20 @@ public class Frame {
         	double[] snapshot1ZeroPadded = new double[snapshotLengthZeroPadded],
        			 snapshot2ZeroPadded = new double[snapshotLengthZeroPadded];
         	
+        	int maxZiFromLeft =  (snapshotLengthZeroPadded - samplesPerWindow) / 2;
+        	int minZiFromRight = maxZiFromLeft + samplesPerWindow;
+        	
         	for (int zi = 0; zi < snapshotLengthZeroPadded; zi++) {
-        		snapshot1ZeroPadded[zi] = zi < samplesPerWindow ? snapshot1[zi] : 0;
-        		snapshot2ZeroPadded[zi] = zi < samplesPerWindow ? snapshot2[zi] : 0;
+        		snapshot1ZeroPadded[zi] = zi > maxZiFromLeft && zi < minZiFromRight ? snapshot1[zi - maxZiFromLeft] : 0;
+        		snapshot2ZeroPadded[zi] = zi > maxZiFromLeft && zi < minZiFromRight ? snapshot2[zi - maxZiFromLeft] : 0;
         	}        	
+        	
+
+        	/* TESTUNG - Mit purem Sinus überschreiben */        	
+//        	for (int ti = 0; ti < snapshot1ZeroPadded.length; ti++) {
+//        		snapshot1ZeroPadded[ti] = Math.sin((2 * Math.PI) * ((double)ti / (64.0 / 3)));
+//        		snapshot2ZeroPadded[ti] = Math.sin((2 * Math.PI) * ((double)ti / (64.0 / 3)));
+//        	}
         	
         	snapshots1ByOffset.put(i - samplesPerWindowHalf, snapshot1ZeroPadded);
         	snapshots2ByOffset.put(i - samplesPerWindowHalf, snapshot2ZeroPadded);        	
@@ -148,17 +158,31 @@ public class Frame {
         			 snapshot2Spectrum = new double[(int)(snapshot2fft.length / 2)];
         	
         	for (int ffti = 0; ffti < snapshot1Spectrum.length; ffti++) {
-        		 if (i - samplesPerWindowHalf == 0 || i - samplesPerWindowHalf == 1)
+        		if (false && i - samplesPerWindowHalf == 0)  {      			
         		 System.out.println("freq=" + (ffti * Clip.getClassSamplingRate() / snapshot1fft.length) + " Hz, re=" + snapshot1fft[ffti * 2] + ", im=" + snapshot1fft[ffti * 2 + 1] + ", mag=" + Math.sqrt(Math.pow(snapshot1fft[ffti * 2], 2) + Math.pow(snapshot1fft[ffti * 2 + 1], 2)));
-            	 double spectralValue1 = Math.sqrt(Math.pow(snapshot1fft[ffti * 2], 2) + Math.pow(snapshot1fft[ffti * 2 + 1], 2));
+        		 System.out.println("freq=" + (ffti * Clip.getClassSamplingRate() / snapshot2fft.length) + " Hz, re=" + snapshot2fft[ffti * 2] + ", im=" + snapshot2fft[ffti * 2 + 1] + ", mag=" + Math.sqrt(Math.pow(snapshot2fft[ffti * 2], 2) + Math.pow(snapshot2fft[ffti * 2 + 1], 2)));
+        		}
+        		
+        		 double spectralValue1, spectralValue2;
+        		 /* Die ersten beiden Zahlen sind besonders */
+        		 if (ffti == 0) {
+        			 spectralValue1 = snapshot1fft[ffti]; //Gleichanteil 
+        			 spectralValue2 = snapshot2fft[ffti];
+        		 }
+        		 else {
+        			 spectralValue1 = Math.sqrt(Math.pow(snapshot1fft[ffti * 2], 2) + Math.pow(snapshot1fft[ffti * 2 + 1], 2));
+        			 spectralValue2 = Math.sqrt(Math.pow(snapshot2fft[ffti * 2], 2) + Math.pow(snapshot2fft[ffti * 2 + 1], 2));
+        		 }
             	 //in dB umrechnen
             	 spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
             	 snapshot1Spectrum[ffti] = spectralValue1;
-            	 
-            	 double spectralValue2 = Math.sqrt(Math.pow(snapshot2fft[ffti * 2], 2) + Math.pow(snapshot2fft[ffti * 2 + 1], 2));
-            	 //in dB umrechnen
+            	   
             	 spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
             	 snapshot2Spectrum[ffti] = spectralValue2;
+            	 
+            	 if (false && i - samplesPerWindowHalf == 0)  {      			
+            		 System.out.println("sp1=" + spectralValue1 + ", sp2=" + spectralValue2);            		 
+            		}
             }
         	
         	spectrum1sByOffset.put(i - samplesPerWindowHalf, snapshot1Spectrum);
