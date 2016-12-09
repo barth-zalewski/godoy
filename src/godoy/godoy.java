@@ -9,16 +9,17 @@ public class godoy {
 		System.out.println("Programm startet.");
 		
 		/* Audio-Datei öffnen */
-		File wavFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", "dr1-fecd0-sa1.wav");
+		File wavFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", "male1-sa2.wav");
 		/* Pitch-Listing-Datei öffnen */
-		File pitchListingFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", "dr1-fecd0-sa1.txt");
+		File pitchListingFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", "male1-sa2.txt");
 		
 		try {
 			Clip clip = Clip.newInstance(wavFile, pitchListingFile);
 			//clip.getExporter().exportAsTXT();
 			//clip.getExporter().exportFrames();
-			clip.getExporter().exportFramesWindowedSamples();
+			//clip.getExporter().exportFramesWindowedSamples();
 			//clip.getExporter().exportSpectrums();
+			clip.getExporter().exportStDevs();
 		}
 		catch (Exception ex) {
 			System.out.println("Die Verarbeitung der Audio-Datei ist fehlgeschlagen.");

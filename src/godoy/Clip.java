@@ -42,6 +42,8 @@ public class Clip {
     private final String name;
     
     private Exporter exporter;
+    
+    private Analyzer analyzer;
  
     public static Clip newInstance(File file, File pitchListingFile) throws UnsupportedAudioFileException, IOException {
         AudioFormat desiredFormat = AUDIO_FORMAT;
@@ -105,14 +107,14 @@ public class Clip {
                  
         }
         
-//        Frame someFrame = frames.get(25);
-        logger.info("counter=" + frames.size());
-//        logger.info("ags=" + AUDIO_FORMAT.getSampleRate());
-//        for (int i = 0; i < someFrame.getLength(); i++) {
-//        	logger.info("fri(" + i + ")=" + someFrame.getReal(i));
-//        }
+        logger.info("frames.size() == " + frames.size());
         
         exporter = new Exporter(frames);
+        analyzer = new Analyzer(frames);
+        
+        analyzer.trackStDev();
+        exporter.setAnalyzer(analyzer);
+              
     }    
 
 	private int readFully(InputStream in, byte[] buf) throws IOException {

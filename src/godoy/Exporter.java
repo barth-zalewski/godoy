@@ -7,6 +7,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -22,6 +23,8 @@ public class Exporter {
 	private final List<Frame> frames;
 	
 	private static final Logger logger = Logger.getLogger(Exporter.class.getName());
+	
+	private Analyzer analyzer;
 	
 	public Exporter(List<Frame> data) {
 		frames = data;
@@ -171,6 +174,9 @@ public class Exporter {
 	public void exportFramesWindowedSamples() {
 		try {
 			for (int i = 0; i < frames.size(); i++) {
+				if (i % 35 != 3) continue; //#
+				
+				
 				Map<Integer, double[]> windowedSamples1 = frames.get(i).getSnapshots1();
 				Map<Integer, double[]> windowedSamples2 = frames.get(i).getSnapshots2();
 				
@@ -182,6 +188,8 @@ public class Exporter {
 				int numberOfWindows = windowedSamples1.size();
 				
 				for (int j = 0; j < numberOfWindows; j++) {
+					if (j != 2) continue; //#
+					
 					double[] samples1 = windowedSamples1.get(j);
 					double[] samples2 = windowedSamples2.get(j);
 					
@@ -228,6 +236,28 @@ public class Exporter {
 					    	endY;
 					    
 					    double sample = allSamples[s];				    
+					    
+					    endY = (int)((height / 2) - ((height / 2) * (sample / allAbsMax)));
+					    
+					    ig2.drawLine(prevX, prevY, endX, endY);
+					    
+					    prevX = endX;
+					    prevY = endY;
+					}
+					
+					//Envelope zeichnen
+					ig2.setPaint(Color.cyan);
+					
+					prevX = 0;
+					prevY = height / 2;
+					
+					double[] env = frames.get(i).getEnvelope();
+					
+					for (int s = 0; s < env.length; s++) {					
+					    int endX = s * pixelsPerSample, 
+					    	endY;
+					    
+					    double sample = env[s];				    
 					    
 					    endY = (int)((height / 2) - ((height / 2) * (sample / allAbsMax)));
 					    
@@ -463,6 +493,113 @@ public class Exporter {
 	      logger.info("Bild nicht gespeichert");
 	      ie.printStackTrace();
 	    }
+	}
+	
+	public void setAnalyzer(Analyzer analyzer) {
+		this.analyzer = analyzer;
+	}
+	
+	public void exportStDevs() {
+		ArrayList<double[]> stDevsByFrame = analyzer.getStDevsByFrame();
+		
+		try {
+			for (int i = 0; i < frames.size(); i++) {
+				double[] stDevByFrame = stDevsByFrame.get(i);
+				
+				double[] allSamples = frames.get(i).getAllSamples();
+				
+				/* 3 Pixel pro Sample */
+				int pixelsPerSample = 3,
+				    width = allSamples.length * pixelsPerSample,
+				    height = 201;							
+				
+				BufferedImage bi = new BufferedImage(width, 2 * height, BufferedImage.TYPE_INT_RGB);
+				
+			    Graphics2D ig2 = bi.createGraphics();
+		
+		        ig2.setPaint(Color.white);
+		        ig2.setColor(Color.white);
+			    
+			    ig2.fillRect(0, 0, width - 1, 2 * height - 1);
+			    
+			    /* Gesamtes Frame zeichnen */				    
+			    
+			    //Horizontale Achse hinzufügen
+			    ig2.setPaint(Color.gray);
+		        ig2.drawLine(0, height / 2, width, height / 2);
+		        
+		        ig2.setPaint(Color.black);
+		        
+		        int prevX = 0, prevY = height / 2;
+		        
+		        double allMin = Double.POSITIVE_INFINITY, allMax = Double.NEGATIVE_INFINITY;
+				
+		        //Samples hinzufügen
+				for (int s = 0; s < allSamples.length; s++) {					
+				    if (allSamples[s] < allMin) {
+				    	allMin = allSamples[s];
+				    }
+				    if (allSamples[s] > allMax) {
+				    	allMax = allSamples[s];
+				    }
+				}
+				
+				double allAbsMax = Math.max(Math.abs(allMin), Math.abs(allMax));
+				
+				for (int s = 0; s < allSamples.length; s++) {					
+				    int endX = s * pixelsPerSample, 
+				    	endY;
+				    
+				    double sample = allSamples[s];				    
+				    
+				    endY = (int)((height / 2) - ((height / 2) * (sample / allAbsMax)));
+				    
+				    ig2.drawLine(prevX, prevY, endX, endY);
+				    
+				    prevX = endX;
+				    prevY = endY;
+				}
+				
+				/* Standardabweichung zeichnen */
+				ig2.setPaint(Color.red);	
+		        
+		        prevX = pixelsPerSample * (allSamples.length - stDevByFrame.length) / 2;
+		        prevY = height + height / 2;
+		        
+		        double min = Double.POSITIVE_INFINITY, max = Double.NEGATIVE_INFINITY;
+		        
+		        for (int s = 0; s < stDevByFrame.length; s++) {					
+				    if (stDevByFrame[s] < min) {
+				    	min = stDevByFrame[s];
+				    }
+				    if (stDevByFrame[s] > max) {
+				    	max = stDevByFrame[s];
+				    }
+				}
+		        
+		        double absMax = Math.max(Math.abs(min), Math.abs(max));
+		        
+		        for (int s = 0; s < stDevByFrame.length; s++) {					
+				    int endX = prevX + pixelsPerSample, 
+				    	endY;
+				    
+				    double sample = stDevByFrame[s];						    
+				    
+				    endY = (int)(height + (height / 2) - ((height / 2) * (sample / absMax)));
+				    
+				    ig2.drawLine(prevX, prevY, endX, endY);
+				    
+				    prevX = endX;
+				    prevY = endY;
+				}
+								
+			    ImageIO.write(bi, "PNG", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\stdevs\\fr-" + frames.get(i).getTimePosition() + ".png"));
+			}
+		}
+		catch(Exception ex) {
+			logger.info("Bild nicht gespeichert");
+		    ex.printStackTrace();
+		}
 	}
 	
 }

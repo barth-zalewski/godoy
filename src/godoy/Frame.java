@@ -28,6 +28,7 @@ public class Frame {
     
     private WindowFunction windowFuncWholeFrame;
     private double[] wholeFrameSpectrum;
+    private double[] envelope;
     
     private final double windowDuration; //s
     
@@ -49,7 +50,7 @@ public class Frame {
         this.pitch = pitch;
         
         windowDuration = Math.max((1 / pitch) / 3, 0.0025); //GODOY
-
+        
         allSamples = timeData.clone();
         
         samplesPerWindow = (int)(sampleRate * windowDuration);
@@ -62,6 +63,13 @@ public class Frame {
         DoubleFFT_1D dct = getDctInstance(frameSize);
         
         double[] wholeFrameSamples = timeData.clone();
+
+        /* Envelope */
+        envelope = wholeFrameSamples.clone();
+        HilbertTransformation hilbertTransformation = new HilbertTransformation();
+        
+        hilbertTransformation.getEnvelope2(envelope);        
+        
         windowFuncWholeFrame = new HammingWindowFunction(frameSize);
         windowFuncWholeFrame.applyWindow(wholeFrameSamples);
         
@@ -78,8 +86,6 @@ public class Frame {
         }
         
         this.wholeFrameSpectrum = wholeFrameSpectrum;
-        
-        /* Das erste lokale Maximum finden - ENVELOPE - Todo. */        
         
 //      int samplesPerPeriod = (int)((1 / pitch) * sampleRate);
 //        
@@ -101,13 +107,6 @@ public class Frame {
         secondSpectrumOffset = 0.5;
         
         /* FFT für Snapshots */
-
-    	/* Nächste 2-er-Potenz finden für die FFT */
-    	int powerOfTwoExpI = 0;
-    	while (samplesPerWindow > Math.pow(2, powerOfTwoExpI)) {
-    		powerOfTwoExpI++;
-    	}
-    	
     	int snapshotLengthZeroPadded = 512; //(int)(Math.pow(2, powerOfTwoExpI + 2));
     	
         DoubleFFT_1D fftSnapshot = getDctInstance(snapshotLengthZeroPadded);
@@ -121,8 +120,8 @@ public class Frame {
         	
         	for (int j = 0; j < samplesPerWindow; j++) {
         		snapshot1[j] = allSamples[i - samplesPerWindowHalf + j];
-        		snapshot2[j] = allSamples[i - samplesPerWindowHalf + j + (int)((double)secondSpectrumOffset * samplesPerPeriod)];
-        	}     
+        		snapshot2[j] = allSamples[i - samplesPerWindowHalf + j + (int)((double)secondSpectrumOffset * samplesPerPeriod)];        		
+        	}             	
         	
         	windowFuncSnapshot.applyWindow(snapshot1);
         	windowFuncSnapshot.applyWindow(snapshot2);
@@ -138,13 +137,6 @@ public class Frame {
         		snapshot2ZeroPadded[zi] = zi > maxZiFromLeft && zi < minZiFromRight ? snapshot2[zi - maxZiFromLeft] : 0;
         	}        	
         	
-
-        	/* TESTUNG - Mit purem Sinus überschreiben */        	
-//        	for (int ti = 0; ti < snapshot1ZeroPadded.length; ti++) {
-//        		snapshot1ZeroPadded[ti] = Math.sin((2 * Math.PI) * ((double)ti / (64.0 / 3)));
-//        		snapshot2ZeroPadded[ti] = Math.sin((2 * Math.PI) * ((double)ti / (64.0 / 3)));
-//        	}
-        	
         	snapshots1ByOffset.put(i - samplesPerWindowHalf, snapshot1ZeroPadded);
         	snapshots2ByOffset.put(i - samplesPerWindowHalf, snapshot2ZeroPadded);        	
         	
@@ -157,22 +149,18 @@ public class Frame {
         	double[] snapshot1Spectrum = new double[(int)(snapshot1fft.length / 2)],
         			 snapshot2Spectrum = new double[(int)(snapshot2fft.length / 2)];
         	
-        	for (int ffti = 0; ffti < snapshot1Spectrum.length; ffti++) {
-        		if (false && i - samplesPerWindowHalf == 0)  {      			
-        		 System.out.println("freq=" + (ffti * Clip.getClassSamplingRate() / snapshot1fft.length) + " Hz, re=" + snapshot1fft[ffti * 2] + ", im=" + snapshot1fft[ffti * 2 + 1] + ", mag=" + Math.sqrt(Math.pow(snapshot1fft[ffti * 2], 2) + Math.pow(snapshot1fft[ffti * 2 + 1], 2)));
-        		 System.out.println("freq=" + (ffti * Clip.getClassSamplingRate() / snapshot2fft.length) + " Hz, re=" + snapshot2fft[ffti * 2] + ", im=" + snapshot2fft[ffti * 2 + 1] + ", mag=" + Math.sqrt(Math.pow(snapshot2fft[ffti * 2], 2) + Math.pow(snapshot2fft[ffti * 2 + 1], 2)));
-        		}
-        		
+        	for (int ffti = 0; ffti < snapshot1Spectrum.length; ffti++) {        		
         		 double spectralValue1, spectralValue2;
         		 /* Die ersten beiden Zahlen sind besonders */
         		 if (ffti == 0) {
-        			 spectralValue1 = snapshot1fft[ffti]; //Gleichanteil 
-        			 spectralValue2 = snapshot2fft[ffti];
+        			 spectralValue1 = 1; //Gleichanteil 
+        			 spectralValue2 = 1;
         		 }
         		 else {
         			 spectralValue1 = Math.sqrt(Math.pow(snapshot1fft[ffti * 2], 2) + Math.pow(snapshot1fft[ffti * 2 + 1], 2));
         			 spectralValue2 = Math.sqrt(Math.pow(snapshot2fft[ffti * 2], 2) + Math.pow(snapshot2fft[ffti * 2 + 1], 2));
         		 }
+        		 double sv1 = spectralValue1;
             	 //in dB umrechnen
             	 spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
             	 snapshot1Spectrum[ffti] = spectralValue1;
@@ -180,9 +168,13 @@ public class Frame {
             	 spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
             	 snapshot2Spectrum[ffti] = spectralValue2;
             	 
-            	 if (false && i - samplesPerWindowHalf == 0)  {      			
-            		 System.out.println("sp1=" + spectralValue1 + ", sp2=" + spectralValue2);            		 
-            		}
+            	 if (Double.isNaN(spectralValue1)) {
+            		 System.out.println("IsNAN 1, sv1=" + sv1 + "ffti=" + ffti);
+            	 }
+            	 if (Double.isNaN(spectralValue2)) {
+            		 System.out.println("IsNAN 2, sv1=" + sv1 + "ffti=" + ffti);
+            	 }
+
             }
         	
         	spectrum1sByOffset.put(i - samplesPerWindowHalf, snapshot1Spectrum);
@@ -211,6 +203,10 @@ public class Frame {
     /* ANALYSE DES VOLLSTÄNDIGEN FRAMES */
     public double[] getAllSamples() {
     	return allSamples;
+    }
+    
+    public double[] getEnvelope() {
+    	return envelope;
     }
     
     public double[] getWholeFrameSpectrum() {
