@@ -24,29 +24,51 @@ public class HilbertTransformation {
 		
 		fft.complexForward(X);
 		
-		/* H-Vektor erzeugen */
-		double[] H = new double[newDimension];
-		int N = newDimension;
-		
-		for (int i = 0; i < N; i++) {
-			int h = i + 1;
-			if (h == 1 || h == N / 2 + 1) {
-				H[i] = 1;
+		for (int i = 0; i < newDimension; i++) {
+			if (i == 0 || i == newDimension / 2) {
+				continue;
 			}
-			else if (h > 1 && h <= N / 2) {
-				H[i] = 2;
+			
+			double[] z = { X[i * 2], X[i * 2 + 1] };
+			
+//			double epsilon = 1E-5;
+//			
+//			z[0] = z[0] < epsilon ? 0 : z[0];
+//			z[1] = z[1] < epsilon ? 0 : z[1];
+//			
+			if (i < newDimension / 2) {
+				rotate90DegreesNegative(z);				
 			}
 			else {
-				H[i] = 0;
+				rotate90DegreesPositive(z);	
 			}
-		}
-				
-		for (int yi = 0; yi < newDimension; yi++) {
-			X[yi * 2] *= H[yi];
-			X[yi * 2 + 1] *= H[yi];
+			X[i * 2] = z[0];
+			X[i * 2 + 1] = z[1];
 		}
 		
-		fft.complexInverse(X, true);
+		/* H-Vektor erzeugen */
+//		double[] H = new double[newDimension];
+//		int N = newDimension;
+//		
+//		for (int i = 0; i < N; i++) {
+//			int h = i + 1;
+//			if (h == 1 || h == N / 2 + 1) {
+//				H[i] = 1;
+//			}
+//			else if (h > 1 && h <= N / 2) {
+//				H[i] = 2;
+//			}
+//			else {
+//				H[i] = 0;
+//			}
+//		}
+//				
+//		for (int yi = 0; yi < newDimension; yi++) {
+//			X[yi * 2] *= H[yi];
+//			X[yi * 2 + 1] *= H[yi];
+//		}
+		
+		fft.complexInverse(X, true);		
 		
 		//Als reeles Array überschreiben
 		double[] rl = new double[samples.length];
@@ -59,51 +81,17 @@ public class HilbertTransformation {
 			samples[i] = Math.sqrt(Math.pow(samples[i], 2) + Math.pow(rl[i], 2));
 		}		
 	}
-
-	/* In-Place-Transformation */
-	public void getEnvelope2(double[] array) {
-		double [] revan = new double [array.length];
-
-		for (int i =0; i<array.length; i++){
-
-			double sum = 0;
-
-			if(i % 2 == 0){ // i even
-
-				for (int j = 0; j < array.length; j++){
-
-					if (j % 2 == 1){ // j odd
-
-						sum += array[j] / (i - j);
-
-					}
-
-				}
-
-				sum *= 2.0 / Math.PI;
-
-			} else { // i odd
-
-				for (int j = 0; j < array.length; j++){
-
-					if (j % 2 == 0){ // j even
-
-						sum += array[j] / (i - j);
-
-					}
-
-				}
-
-				sum *= 2.0 / Math.PI;
-
-			}
-
-			revan[i] = sum;
-
-		}
-
-		for (int ri = 0; ri < array.length; ri++) {
-			array[ri] = Math.sqrt(Math.pow(array[ri], 2) + Math.pow(revan[ri], 2));
-		}
+	
+	public void rotate90DegreesPositive(double[] z) {
+		double re = z[0], im = z[1];
+		z[0] = -im;
+		z[1] = re;
 	}
+	
+	public void rotate90DegreesNegative(double[] z) {
+		double re = z[0], im = z[1];
+		z[0] = im;
+		z[1] = -re;
+	}
+
 }

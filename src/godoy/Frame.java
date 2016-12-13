@@ -68,7 +68,7 @@ public class Frame {
         envelope = wholeFrameSamples.clone();
         HilbertTransformation hilbertTransformation = new HilbertTransformation();
         
-        hilbertTransformation.getEnvelope2(envelope);        
+        hilbertTransformation.getEnvelope(envelope);        
         
         windowFuncWholeFrame = new HammingWindowFunction(frameSize);
         windowFuncWholeFrame.applyWindow(wholeFrameSamples);
@@ -160,20 +160,13 @@ public class Frame {
         			 spectralValue1 = Math.sqrt(Math.pow(snapshot1fft[ffti * 2], 2) + Math.pow(snapshot1fft[ffti * 2 + 1], 2));
         			 spectralValue2 = Math.sqrt(Math.pow(snapshot2fft[ffti * 2], 2) + Math.pow(snapshot2fft[ffti * 2 + 1], 2));
         		 }
-        		 double sv1 = spectralValue1;
+        		 
             	 //in dB umrechnen
             	 spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
             	 snapshot1Spectrum[ffti] = spectralValue1;
             	   
             	 spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
-            	 snapshot2Spectrum[ffti] = spectralValue2;
-            	 
-            	 if (Double.isNaN(spectralValue1)) {
-            		 System.out.println("IsNAN 1, sv1=" + sv1 + "ffti=" + ffti);
-            	 }
-            	 if (Double.isNaN(spectralValue2)) {
-            		 System.out.println("IsNAN 2, sv1=" + sv1 + "ffti=" + ffti);
-            	 }
+            	 snapshot2Spectrum[ffti] = spectralValue2;            	 
 
             }
         	
