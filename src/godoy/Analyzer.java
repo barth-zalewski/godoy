@@ -10,7 +10,7 @@ public class Analyzer {
 	private ArrayList<double[]> stDevsByFrame;
 	
 	private int minFrequency = 3000,
-				maxFrequency = 5500;
+				maxFrequency = 6000;
 	
 	public Analyzer(List<Frame> data) {
 		frames = data;
@@ -53,7 +53,30 @@ public class Analyzer {
 					spectralDifferencesArray[sd] = spectralDifferences.get(sd);
 				}
 				
-				stDevs[j] = Utils.standardDeviation(spectralDifferencesArray);				
+//				//Ist Peak positiv?
+//				double maxAbsPeak = Double.NEGATIVE_INFINITY;
+//				boolean isPeakNegative = false;
+//				
+//				for (int sd = 0; sd < spectralDifferencesArray.length; sd++) {
+//					if (maxAbsPeak < Math.abs(spectralDifferencesArray[sd])) {
+//						maxAbsPeak = Math.abs(spectralDifferencesArray[sd]);
+//						if (spectralDifferencesArray[sd] < 0) {
+//							isPeakNegative = true;
+//						}
+//					}
+//				}
+				
+				//Existiert ein positiver Peak größer als 10% des nächsten Wertes?
+				double maxPeak = Double.NEGATIVE_INFINITY, secondMaxPeak = maxPeak;
+				
+				for (int sd = 0; sd < spectralDifferencesArray.length; sd++) {
+					if (maxPeak < spectralDifferencesArray[sd]) {
+						secondMaxPeak = maxPeak;
+						maxPeak = spectralDifferencesArray[sd];						
+					}
+				}							
+				
+				stDevs[j] = secondMaxPeak / maxPeak < 0.6 ? 1 : 0;				
 			}
 			
 			stDevsByFrame.add(stDevs);

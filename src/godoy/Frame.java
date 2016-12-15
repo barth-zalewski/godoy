@@ -152,20 +152,20 @@ public class Frame {
         	for (int ffti = 0; ffti < snapshot1Spectrum.length; ffti++) {        		
         		 double spectralValue1, spectralValue2;
         		 /* Die ersten beiden Zahlen sind besonders */
-        		 if (ffti == 0) {
-        			 spectralValue1 = 1; //Gleichanteil 
-        			 spectralValue2 = 1;
-        		 }
-        		 else {
+//        		 if (ffti == 0) {
+//        			 spectralValue1 = 1; //Gleichanteil 
+//        			 spectralValue2 = 1;
+//        		 }
+//        		 else {
         			 spectralValue1 = Math.sqrt(Math.pow(snapshot1fft[ffti * 2], 2) + Math.pow(snapshot1fft[ffti * 2 + 1], 2));
         			 spectralValue2 = Math.sqrt(Math.pow(snapshot2fft[ffti * 2], 2) + Math.pow(snapshot2fft[ffti * 2 + 1], 2));
-        		 }
+//        		 }
         		 
             	 //in dB umrechnen
-            	 spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
+            	 //spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
             	 snapshot1Spectrum[ffti] = spectralValue1;
             	   
-            	 spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
+            	 //spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
             	 snapshot2Spectrum[ffti] = spectralValue2;            	 
 
             }

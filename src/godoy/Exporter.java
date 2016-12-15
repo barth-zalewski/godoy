@@ -174,9 +174,8 @@ public class Exporter {
 	public void exportFramesWindowedSamples() {
 		try {
 			for (int i = 0; i < frames.size(); i++) {
-				if (i % 35 != 3) continue; //#
-				
-				
+				if (i != 41) continue; //#
+								
 				Map<Integer, double[]> windowedSamples1 = frames.get(i).getSnapshots1();
 				Map<Integer, double[]> windowedSamples2 = frames.get(i).getSnapshots2();
 				
@@ -188,7 +187,7 @@ public class Exporter {
 				int numberOfWindows = windowedSamples1.size();
 				
 				for (int j = 0; j < numberOfWindows; j++) {
-					if (j != 2) continue; //#
+					//if (j != 0) continue; //#
 					
 					double[] samples1 = windowedSamples1.get(j);
 					double[] samples2 = windowedSamples2.get(j);
@@ -408,15 +407,25 @@ public class Exporter {
 					    if (spectrum1[s] > spMax) {
 					    	spMax = spectrum1[s];
 					    }
+					    
 					    if (spectrum2[s] < spMin) {
 					    	spMin = spectrum2[s];
 					    }
 					    if (spectrum2[s] > spMax) {
 					    	spMax = spectrum2[s];
 					    }
+					    
+					    double diff = spectrum1[s] - spectrum2[s];
+					    
+					    if (diff < spMin) {
+					    	spMin = diff;
+					    }
+					    if (diff > spMax) {
+					    	spMax = diff;
+					    }
 					}
 					
-					double spAbsMax = Math.max(Math.abs(spMax), Math.abs(spMax));
+					double spAbsMax = Math.max(Math.abs(spMin), Math.abs(spMax));
 					
 					int pixelsPerFrequency = width / spectrum1.length;
 					
