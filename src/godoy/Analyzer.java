@@ -1,29 +1,31 @@
 package godoy;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class Analyzer {
 	
 	private List<Frame> frames;
-	private ArrayList<double[]> stDevsByFrame;
+	private ArrayList<double[]> peaksByFrame;
+	int[] histogramm;
 	
 	private int minFrequency = 3000,
 				maxFrequency = 6000;
 	
 	public Analyzer(List<Frame> data) {
-		frames = data;
-	}
+		frames = data;		
+	}	
 	
-	public void trackStDev() {		
-		stDevsByFrame = new ArrayList<double[]>();
+	public void trackPeaks() {		
+		peaksByFrame = new ArrayList<double[]>();
 		
 		for (int i = 0; i < frames.size(); i++) {
 			Map<Integer, double[]> spectrums1 = frames.get(i).getSpectrums1();
 			Map<Integer, double[]> spectrums2 = frames.get(i).getSpectrums2();
 			
-			double[] stDevs = new double[spectrums1.size()];
+			double[] peaks = new double[spectrums1.size()];
 			
 			for (int j = 0; j < spectrums1.size(); j++) {
 				double[] spectrum1 = spectrums1.get(j),
@@ -51,22 +53,9 @@ public class Analyzer {
 				double[] spectralDifferencesArray = new double[spectralDifferences.size()];
 				for (int sd = 0; sd < spectralDifferences.size(); sd++) {
 					spectralDifferencesArray[sd] = spectralDifferences.get(sd);
-				}
+				}	
 				
-//				//Ist Peak positiv?
-//				double maxAbsPeak = Double.NEGATIVE_INFINITY;
-//				boolean isPeakNegative = false;
-//				
-//				for (int sd = 0; sd < spectralDifferencesArray.length; sd++) {
-//					if (maxAbsPeak < Math.abs(spectralDifferencesArray[sd])) {
-//						maxAbsPeak = Math.abs(spectralDifferencesArray[sd]);
-//						if (spectralDifferencesArray[sd] < 0) {
-//							isPeakNegative = true;
-//						}
-//					}
-//				}
-				
-				//Existiert ein positiver Peak größer als 10% des nächsten Wertes?
+				//Existiert ein positiver Peak größer als X% des nächsten Wertes?
 				double maxPeak = Double.NEGATIVE_INFINITY, secondMaxPeak = maxPeak;
 				
 				for (int sd = 0; sd < spectralDifferencesArray.length; sd++) {
@@ -76,14 +65,53 @@ public class Analyzer {
 					}
 				}							
 				
-				stDevs[j] = secondMaxPeak / maxPeak < 0.6 ? 1 : 0;				
+				peaks[j] = secondMaxPeak / maxPeak < 0.8 ? 1 : 0;
 			}
 			
-			stDevsByFrame.add(stDevs);
+			peaksByFrame.add(peaks);
 		}			
+	}	
+	
+	//Vor dieser Funktion muss "trackPeaks" aufgerufen werden
+	public void peaksPositionsHistogramm() {
+		histogramm = new int[100]; //Prozentuale Indizes bzgl. des Anfangs der Periode
+		
+		for (int i = 0; i < frames.size(); i++) {
+			double[] peaks = peaksByFrame.get(i);			
+			int[] periodStartingPoints = frames.get(i).getPeriodStartingPoints();
+			int halfLengthOffset = (int)((periodStartingPoints.length - peaks.length) / 2);
+			
+			//Peaks-Länge mit allSamples angleichen
+			double[] peaksFilled = new double[periodStartingPoints.length];
+			
+			for (int p = 0; p < peaks.length; p++) {
+				peaksFilled[p + halfLengthOffset] = peaks[p];
+			}
+			
+			int samplesPerPeriod = (int)((1 / frames.get(i).getPitch()) * Clip.getClassSamplingRate());
+			
+			//Histogramm erzeugen
+			int lastSamplePositionBeingPeriodStart = 0;
+			
+			for (int p = 0; p < peaksFilled.length; p++) {
+				if (periodStartingPoints[p] == 1) {
+					lastSamplePositionBeingPeriodStart = p;
+				}
+				if (peaksFilled[p] == 1) {
+					int percentage = (int)(100 * (p - lastSamplePositionBeingPeriodStart) / samplesPerPeriod);
+					if (percentage < 50) {
+						histogramm[percentage]++;
+					}
+				}
+			}		
+		}
 	}
 	
-	public ArrayList<double[]> getStDevsByFrame() {
-		return stDevsByFrame;
+	public ArrayList<double[]> getPeaksByFrame() {
+		return peaksByFrame;
+	}
+	
+	public int[] getHistogramm() {
+		return histogramm;
 	}
 }

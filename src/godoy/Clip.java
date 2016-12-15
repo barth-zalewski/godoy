@@ -112,7 +112,8 @@ public class Clip {
         exporter = new Exporter(frames);
         analyzer = new Analyzer(frames);
         
-        analyzer.trackStDev();
+        analyzer.trackPeaks();
+        analyzer.peaksPositionsHistogramm();
         exporter.setAnalyzer(analyzer);
               
     }    

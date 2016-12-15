@@ -13,6 +13,8 @@ import org.jtransforms.fft.DoubleFFT_1D;
 public class Frame {    
     private double[] data, allSamples;
     
+    private int[] periodStartingPoints;
+    
     /**
      * Optimierung: ein Map mit DCT-Instanzen und der Länge, die sie verarbeiten können
      */
@@ -87,12 +89,29 @@ public class Frame {
         
         this.wholeFrameSpectrum = wholeFrameSpectrum;
         
-//      int samplesPerPeriod = (int)((1 / pitch) * sampleRate);
-//        
-//      if (samplesPerPeriod > frameSize) {
-//      	samplesPerPeriod = frameSize;
-//      }                
-//      
+        /* Lokale Maxima finden */
+        periodStartingPoints = new int[allSamples.length]; //1 wenn ein lokales Maximum, sonst 0
+        int samplesPerPeriod = (int)((1 / pitch) * sampleRate);
+        
+        if (samplesPerPeriod > frameSize) {
+        	samplesPerPeriod = frameSize;
+        }                
+        
+        int currentSampleForMaxima = 0;
+        
+        while (currentSampleForMaxima < allSamples.length) {
+        	double localMaximum = Double.NEGATIVE_INFINITY;
+        	int foundPositionOfLocalMaximum = -1;
+        	for (int zmx = currentSampleForMaxima; zmx < Math.min(currentSampleForMaxima + samplesPerPeriod * 0.8, envelope.length); zmx++) { //- 20, um nicht aus Versehen die nächste Periode zu erfassen
+        		if (envelope[zmx] > localMaximum) {
+        			foundPositionOfLocalMaximum = zmx;
+        			localMaximum = envelope[zmx];
+        		}
+        	}
+        	periodStartingPoints[foundPositionOfLocalMaximum] = 1;
+        	currentSampleForMaxima = foundPositionOfLocalMaximum + (int)(samplesPerPeriod * 0.8);
+        }
+      
 //      double maxSampleInPeriod = Double.NEGATIVE_INFINITY;
 //      int positionOfLocalMaximum = -1;
 //      
@@ -250,6 +269,14 @@ public class Frame {
     
     public WindowFunction getWindowFuncSnapshot() {
     	return windowFuncSnapshot;
+    }
+    
+    public int[] getPeriodStartingPoints() {
+    	return periodStartingPoints;
+    }
+    
+    public double getPitch() {
+    	return pitch;
     }
 
 }

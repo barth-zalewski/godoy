@@ -508,8 +508,8 @@ public class Exporter {
 		this.analyzer = analyzer;
 	}
 	
-	public void exportStDevs() {
-		ArrayList<double[]> stDevsByFrame = analyzer.getStDevsByFrame();
+	public void exportPeakPositions() {
+		ArrayList<double[]> stDevsByFrame = analyzer.getPeaksByFrame();
 		
 		try {
 			for (int i = 0; i < frames.size(); i++) {
@@ -601,6 +601,30 @@ public class Exporter {
 				    prevX = endX;
 				    prevY = endY;
 				}
+		        
+		        /* Lokale Peaks einzeichnen */
+		        prevX = 0;
+		        prevY = 0;
+		        
+		        ig2.setPaint(Color.green);
+		        
+		        int[] localMaxima = frames.get(i).getPeriodStartingPoints();
+		        
+		        for (int s = 0; s < localMaxima.length; s++) {					
+				    int endX = prevX + pixelsPerSample, 
+				    	endY = 0;
+				    
+				    double sample = localMaxima[s];						    
+				    
+				    if (sample == 1) {
+				    	endY = (int)(2* height);
+				    
+				    	ig2.drawLine(prevX, prevY, endX, endY);
+				    }
+				    
+				    prevX = endX;
+				    prevY = endY;
+				}
 								
 			    ImageIO.write(bi, "PNG", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\stdevs\\fr-" + frames.get(i).getTimePosition() + ".png"));
 			}
@@ -611,4 +635,7 @@ public class Exporter {
 		}
 	}
 	
+	public void exportPeaksPositionHistogramm() {
+		
+	}
 }
