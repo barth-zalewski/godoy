@@ -6,9 +6,9 @@ import java.util.ArrayList;
 public class CorpusExtractor {
 	
 	private static String gender = "*";
-	private static ArrayList<File> corpus = new ArrayList<File>();
+	private static ArrayList<String> corpus = new ArrayList<String>();
 	
-	public static ArrayList<File> getCorpus(String basePath) {
+	public static ArrayList<String> getCorpus(String basePath) {
 		if (gender.equals("*") || gender.equals("females")) {			
 			File baseFolder = new File(basePath + "\\females");
 			listFiles(baseFolder);
@@ -22,7 +22,9 @@ public class CorpusExtractor {
 	        	listFiles(fileEntry);
 	        } else {
 	        	if (fileEntry.getName().indexOf(".wav") > -1) {
-	        		corpus.add(fileEntry);
+	        		String path = fileEntry.getAbsolutePath(),
+	        			   absolutePathWithoutExtension = path.substring(0, path.lastIndexOf('.'));
+	        		corpus.add(absolutePathWithoutExtension);	        		
 	        	}
 	        }
 	    }

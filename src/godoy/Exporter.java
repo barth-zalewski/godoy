@@ -174,7 +174,7 @@ public class Exporter {
 	public void exportFramesWindowedSamples() {
 		try {
 			for (int i = 0; i < frames.size(); i++) {
-				if (i != 41) continue; //#
+				//if (i != 41) continue; //#
 								
 				Map<Integer, double[]> windowedSamples1 = frames.get(i).getSnapshots1();
 				Map<Integer, double[]> windowedSamples2 = frames.get(i).getSnapshots2();
@@ -602,6 +602,29 @@ public class Exporter {
 				    prevY = endY;
 				}
 		        
+		        
+		        //Envelope zeichnen
+				ig2.setPaint(Color.cyan);
+				
+				prevX = 0;
+				prevY = height / 2;
+				
+				double[] env = frames.get(i).getEnvelope();
+				
+				for (int s = 0; s < env.length; s++) {					
+				    int endX = s * pixelsPerSample, 
+				    	endY;
+				    
+				    double sample = env[s];				    
+				    
+				    endY = (int)((height / 2) - ((height / 2) * (sample / allAbsMax)));
+				    
+				    ig2.drawLine(prevX, prevY, endX, endY);
+				    
+				    prevX = endX;
+				    prevY = endY;
+				}
+		        
 		        /* Lokale Peaks einzeichnen */
 		        prevX = 0;
 		        prevY = 0;
@@ -636,6 +659,50 @@ public class Exporter {
 	}
 	
 	public void exportPeaksPositionHistogramm() {
-		
+		try {
+			int[] histogramm = analyzer.getHistogramm();
+			
+			int size = 400;
+			
+			BufferedImage bi = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+			
+		    Graphics2D ig2 = bi.createGraphics();
+	
+	        ig2.setPaint(Color.white);
+	        ig2.setColor(Color.white);
+		    
+		    ig2.fillRect(0, 0, size - 1, size - 1);
+		    
+		    ig2.setPaint(Color.black);
+		    ig2.setColor(Color.black);
+		    
+		    int rectWidth = size / 20;
+		    
+		    double maxHistogrammValue = Double.NEGATIVE_INFINITY;
+		    
+		    for (int h = 0; h < histogramm.length; h += 5) {
+		    	int sum = 0;
+		    	for (int hq = 0; hq < 5; hq++) {
+		    		sum += histogramm[h + hq];
+		    	}
+		    	maxHistogrammValue = Math.max(maxHistogrammValue, sum);
+		    }
+		    
+		    for (int h = 0; h < histogramm.length; h += 5) {		    	
+		    	int sum = 0;
+		    	for (int hq = 0; hq < 5; hq++) {
+		    		sum += histogramm[h + hq];
+		    	}
+		    	
+		    	int rectHeight = (int)((sum / maxHistogrammValue) * size);
+		    	ig2.fillRect((h / 5) * rectWidth, size - rectHeight, rectWidth - 1, rectHeight);
+		    }
+		    
+		    ImageIO.write(bi, "PNG", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\histo\\", "histogramm.png"));
+		}
+		catch(Exception ex) {
+			logger.info("Bild nicht gespeichert");
+		    ex.printStackTrace();
+		}
 	}
 }

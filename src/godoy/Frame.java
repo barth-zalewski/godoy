@@ -46,7 +46,7 @@ public class Frame {
     
     private static final double DB_REFERENCE = 1E3;
     
-    public Frame(double[] timeData, double pitch, float sampleRate) {
+    public Frame(double[] timeData, double pitch, float sampleRate, double secondSpectrumOffset) {
 
         int frameSize = timeData.length;
         this.pitch = pitch;
@@ -112,19 +112,6 @@ public class Frame {
         	currentSampleForMaxima = foundPositionOfLocalMaximum + (int)(samplesPerPeriod * 0.8);
         }
       
-//      double maxSampleInPeriod = Double.NEGATIVE_INFINITY;
-//      int positionOfLocalMaximum = -1;
-//      
-//      for (int i = 0; i < samplesPerPeriod; i++) {
-//      	if (allSamples[i] > maxSampleInPeriod) {
-//      		maxSampleInPeriod = allSamples[i];
-//      		positionOfLocalMaximum = i;
-//      	}
-//      }
-//        
-        //Um welchen Teil der Periode soll das zweite Spektrum verschoben werden?
-        secondSpectrumOffset = 0.5;
-        
         /* FFT für Snapshots */
     	int snapshotLengthZeroPadded = 512; //(int)(Math.pow(2, powerOfTwoExpI + 2));
     	

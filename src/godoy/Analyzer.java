@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/* Analyzer für einzelne Clips */
 public class Analyzer {
 	
 	private List<Frame> frames;
@@ -99,7 +100,7 @@ public class Analyzer {
 				}
 				if (peaksFilled[p] == 1) {
 					int percentage = (int)(100 * (p - lastSamplePositionBeingPeriodStart) / samplesPerPeriod);
-					if (percentage < 50) {
+					if (percentage < 100) {
 						histogramm[percentage]++;
 					}
 				}

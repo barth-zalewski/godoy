@@ -45,13 +45,13 @@ public class Clip {
     
     private Analyzer analyzer;
  
-    public static Clip newInstance(File file, File pitchListingFile) throws UnsupportedAudioFileException, IOException {
+    public static Clip newInstance(File file, File pitchListingFile, double secondSpectrumOffset) throws UnsupportedAudioFileException, IOException {
         AudioFormat desiredFormat = AUDIO_FORMAT;
         BufferedInputStream in = new BufferedInputStream(AudioFileUtils.readAsMono(desiredFormat, file));
-        return new Clip(file.getAbsolutePath(), in, pitchListingFile);
+        return new Clip(file.getAbsolutePath(), in, pitchListingFile, secondSpectrumOffset);
     }
    
-    private Clip(String name, InputStream in, File pitchListingFile) throws IOException {
+    private Clip(String name, InputStream in, File pitchListingFile, double secondSpectrumOffset) throws IOException {
         this.name = name;
         
         /* Pitch-Listing abarbeiten */
@@ -94,7 +94,7 @@ public class Clip {
 	            
 	            double meanPitch = (pitchAnalyzer.getPitch(timeCounter) + pitchAnalyzer.getPitchNext(timeCounter) + pitchAnalyzer.getPitch2Next(timeCounter)) / 3;
 	            
-	            Frame fr = new Frame(samples, meanPitch, AUDIO_FORMAT.getSampleRate());
+	            Frame fr = new Frame(samples, meanPitch, AUDIO_FORMAT.getSampleRate(), secondSpectrumOffset);
 	            fr.setTimePosition(timeCounter);
 	            
 	            frames.add(fr);
@@ -106,8 +106,6 @@ public class Clip {
             timeCounter = Math.round(timeCounter * 1000000.0) / 1000000.0;
                  
         }
-        
-        logger.info("frames.size() == " + frames.size());
         
         exporter = new Exporter(frames);
         analyzer = new Analyzer(frames);
@@ -160,6 +158,10 @@ public class Clip {
     
     public Exporter getExporter() {
     	return exporter;
+    }
+    
+    public Analyzer getAnalyzer() {
+    	return analyzer;
     }
 
 }

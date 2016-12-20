@@ -8,9 +8,49 @@ public class HilbertTransformation {
 				
 	}
 	
-	
 	/* In-Place-Transformation */
 	public void getEnvelope(double[] samples) {
+		double[] samplesWithPeaks = new double[samples.length];
+		
+		for (int i = 0; i < samples.length; i++) {
+			if (i == 0 || i == samples.length - 1) {
+				samplesWithPeaks[i] = samples[i];
+			}
+			else {
+				if (samples[i] > samples[i - 1] && samples[i] > samples[i + 1]) {
+					samplesWithPeaks[i] = samples[i];
+				}
+				else {
+					samplesWithPeaks[i] = Double.NEGATIVE_INFINITY;
+				}
+			}
+		}
+		
+		for (int i = 1; i < samplesWithPeaks.length - 1; i++) {
+			if (samplesWithPeaks[i] == Double.NEGATIVE_INFINITY) {
+				double previous = Double.NEGATIVE_INFINITY, next = Double.NEGATIVE_INFINITY;
+				int pi = i - 1, ni = i + 1;
+				while (previous == Double.NEGATIVE_INFINITY) {
+					previous = samplesWithPeaks[pi];
+					pi--;
+				}
+				while (next == Double.NEGATIVE_INFINITY) {
+					next = samplesWithPeaks[ni];
+					ni++;
+				}
+				samplesWithPeaks[i] = (previous + next) / 2;
+			}
+		}
+		
+		for (int i = 0; i < samples.length; i++) {
+			samples[i] = samplesWithPeaks[i];
+		}
+	}
+	
+	/**
+	 * @deprecated
+	 */	
+	public void getEnvelope__(double[] samples) {
 		int newDimension = Utils.nextPowerOfTwo(samples.length);
 		
 		double[] X = new double[newDimension * 2];
