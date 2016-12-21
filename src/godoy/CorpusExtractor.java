@@ -13,6 +13,10 @@ public class CorpusExtractor {
 			File baseFolder = new File(basePath + "\\females");
 			listFiles(baseFolder);
 		}
+		if (gender.equals("*") || gender.equals("males")) {			
+			File baseFolder = new File(basePath + "\\males");
+			listFiles(baseFolder);
+		}
 		return corpus;
 	}
 	
@@ -40,6 +44,6 @@ public class CorpusExtractor {
 	}
 	
 	public static void all() {
-		gender = "all";
+		gender = "*";
 	}
 }

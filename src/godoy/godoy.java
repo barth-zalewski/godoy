@@ -2,7 +2,7 @@ package godoy;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.LinkedHashMap;
 
 import godoy.Clip;
 
@@ -11,20 +11,21 @@ public class godoy {
 		System.out.println("Programm startet.");
 		
 		/* Korpus initialisieren */
-		CorpusExtractor.onlyFemales();
+		CorpusExtractor.all();
 		ArrayList<String> corpus = CorpusExtractor.getCorpus("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");
 		
 		for (String fileStub : corpus) {
 			File wavFile = new File(fileStub + ".wav");
 			File pitchListingFile = new File(fileStub + ".pitch");
-			System.out.println(fileStub);
+			System.out.println("Verarbeite Datei " + fileStub);
 			try {
-				for (double sp = 0.25; sp <= 0.7; sp += 0.05) {
+				for (double sp = 0.25; sp <= 0.85; sp += 0.05) {
+					//Wegen der Präzisionfehler...
+		            sp = Math.round(sp * 1000.0) / 1000.0;
+		            
 					Clip clip = Clip.newInstance(wavFile, pitchListingFile, sp);
 					clip.getAnalyzer().peaksPositionsHistogramm();
-					GlobalAnalyzer.addHistogrammRow(clip.getAnalyzer().getHistogramm(), sp);					
-					Map<Double, int[]> histogramm2D = GlobalAnalyzer.getHistogramm2D();
-					GlobalExporter.exportHistogramm2D(histogramm2D);
+					GlobalAnalyzer.addHistogrammRow(clip.getAnalyzer().getHistogramm(), sp);										
 				}
 			}
 			catch (Exception ex) {
@@ -34,7 +35,8 @@ public class godoy {
 		}
 		
 		/* Peak-Histogramm erzeugen */
-		// Wird gemacht.
+		LinkedHashMap<Double, int[]> histogramm2D = GlobalAnalyzer.getHistogramm2D();
+		GlobalExporter.exportHistogramm2D(histogramm2D);
 		
 		//Alte Logik
 		/* Audio-Datei öffnen */

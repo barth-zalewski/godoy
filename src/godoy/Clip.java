@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -18,9 +17,6 @@ import javax.sound.sampled.UnsupportedAudioFileException;
  */
 
 public class Clip {
-
-    private static final Logger logger = Logger.getLogger(Clip.class.getName());
-
     /**
      * Nur mit diesem Format können wir arbeiten.
      */
@@ -39,8 +35,6 @@ public class Clip {
      */
     private final int frameSize;
     
-    private final String name;
-    
     private Exporter exporter;
     
     private Analyzer analyzer;
@@ -52,8 +46,6 @@ public class Clip {
     }
    
     private Clip(String name, InputStream in, File pitchListingFile, double secondSpectrumOffset) throws IOException {
-        this.name = name;
-        
         /* Pitch-Listing abarbeiten */
         pitchAnalyzer = new PitchAnalyzer(pitchListingFile);
         
@@ -88,16 +80,12 @@ public class Clip {
 	                samples[isamp] = sampVal;
 	            }
 	            
-	            for (; isamp < frameSizeZeropadded; isamp++) {
-	            	samples[isamp] = 0;
-	            }
-	            
 	            double meanPitch = (pitchAnalyzer.getPitch(timeCounter) + pitchAnalyzer.getPitchNext(timeCounter) + pitchAnalyzer.getPitch2Next(timeCounter)) / 3;
 	            
-	            Frame fr = new Frame(samples, meanPitch, AUDIO_FORMAT.getSampleRate(), secondSpectrumOffset);
-	            fr.setTimePosition(timeCounter);
+	            Frame frame = new Frame(samples, meanPitch, AUDIO_FORMAT.getSampleRate(), secondSpectrumOffset);
+	            frame.setTimePosition(timeCounter);
 	            
-	            frames.add(fr);
+	            frames.add(frame);
             }
             
             timeCounter += 3 * pitchAnalyzer.timeStep(); //3, weil 30 ms für Analyse und 10 ms Praatausgabe
