@@ -49,6 +49,7 @@ public class Frame {
 
         int frameSize = timeData.length;
         this.pitch = pitch;
+        this.secondSpectrumOffset = secondSpectrumOffset;
         
         windowDuration = Math.max((1 / pitch) / 3, 0.0025); //GODOY
         
@@ -67,9 +68,9 @@ public class Frame {
 
         /* Envelope */
         envelope = wholeFrameSamples.clone();
-        HilbertTransformation hilbertTransformation = new HilbertTransformation();
+        EnvelopeDetector envelopeDetector = new EnvelopeDetector();
         
-        hilbertTransformation.getEnvelope(envelope);        
+        envelopeDetector.getEnvelope(envelope);        
         
         windowFuncWholeFrame = new HammingWindowFunction(frameSize);
         windowFuncWholeFrame.applyWindow(wholeFrameSamples);

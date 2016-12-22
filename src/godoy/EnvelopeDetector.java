@@ -2,14 +2,19 @@ package godoy;
 
 import org.jtransforms.fft.DoubleFFT_1D;
 
-public class HilbertTransformation {
+public class EnvelopeDetector {
 	
-	public HilbertTransformation() {
+	public EnvelopeDetector() {
 				
 	}
 	
 	/* In-Place-Transformation */
 	public void getEnvelope(double[] samples) {
+		localMaximumBasedEnvelopeDetector(samples);
+	}
+	
+	/* Zurzeit benutze Methode - eine effektive Berechnung, indem lokale Maxima gefunden werden */
+	private void localMaximumBasedEnvelopeDetector(double[] samples) {		
 		double[] samplesWithPeaks = new double[samples.length];
 		
 		for (int i = 0; i < samples.length; i++) {
@@ -47,10 +52,8 @@ public class HilbertTransformation {
 		}
 	}
 	
-	/**
-	 * @deprecated
-	 */	
-	public void getEnvelope__(double[] samples) {
+	/* Analytisches Signal mit der Hilber-Transformation */
+	private void analyticSignalViaHilbert(double[] samples) {
 		int newDimension = Utils.nextPowerOfTwo(samples.length);
 		
 		double[] X = new double[newDimension * 2];

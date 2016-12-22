@@ -172,7 +172,7 @@ public class Exporter {
 	public void exportFramesWindowedSamples() {
 		try {
 			for (int i = 0; i < frames.size(); i++) {
-				//if (i != 41) continue; //#
+				//if (i != 130 && i != 55) continue; //#
 								
 				Map<Integer, double[]> windowedSamples1 = frames.get(i).getSnapshots1();
 				Map<Integer, double[]> windowedSamples2 = frames.get(i).getSnapshots2();
@@ -185,7 +185,7 @@ public class Exporter {
 				int numberOfWindows = windowedSamples1.size();
 				
 				for (int j = 0; j < numberOfWindows; j++) {
-					//if (j != 0) continue; //#
+					if (j != 150) continue; //#
 					
 					double[] samples1 = windowedSamples1.get(j);
 					double[] samples2 = windowedSamples2.get(j);

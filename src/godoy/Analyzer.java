@@ -65,7 +65,7 @@ public class Analyzer {
 					}
 				}							
 				
-				peaks[j] = secondMaxPeak / maxPeak < 0.8 ? 1 : 0;
+				peaks[j] = secondMaxPeak / maxPeak < 0.6 ? 1 : 0;
 			}
 			
 			peaksByFrame.add(peaks);

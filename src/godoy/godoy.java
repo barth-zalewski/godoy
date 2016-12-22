@@ -11,7 +11,7 @@ public class godoy {
 		System.out.println("Programm startet.");
 		
 		/* Korpus initialisieren */
-		CorpusExtractor.all();
+		CorpusExtractor.onlyMales();
 		ArrayList<String> corpus = CorpusExtractor.getCorpus("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");
 		
 		for (String fileStub : corpus) {
@@ -45,17 +45,17 @@ public class godoy {
 //		File pitchListingFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus\\old\\dr1-fetb0-si1778.txt");
 //		
 //		try {
-//			Clip clip = Clip.newInstance(wavFile, pitchListingFile);		
-//			//clip.getExporter().exportFramesWindowedSamples();
+//			Clip clip = Clip.newInstance(wavFile, pitchListingFile, 0.5);		
+//			clip.getExporter().exportFramesWindowedSamples();
 //			//clip.getExporter().exportSpectrums();
-//			//clip.getExporter().exportPeakPositions();
-//			clip.getExporter().exportPeaksPositionHistogramm();
+//			clip.getExporter().exportPeakPositions();
+//			//clip.getExporter().exportPeaksPositionHistogramm();
 //		}
 //		catch (Exception ex) {
 //			System.out.println("Die Verarbeitung der Audio-Datei ist fehlgeschlagen.");
 //			ex.printStackTrace(System.out);
 //		}
-//		
+		
 		
 		System.out.println("Programm endet.");
 	}	

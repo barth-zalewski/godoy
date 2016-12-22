@@ -5,20 +5,16 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.LinkedHashMap;
 
-import java.util.logging.Logger;
-
 /*
  * Grundfrequenz-Analyser. Er liest die Datei aus (wie erzeugt im Praat) und verarbeitet sie.
  * 
  * Annahme: die Grundfrequenz ändert sich innerhalb von 10 ms nicht.
  */
 
-public class PitchAnalyzer {
-	private static final Logger logger = Logger.getLogger(PitchAnalyzer.class.getName());
-	
+public class PitchAnalyzer {	
     private LinkedHashMap<Double, Double> pitches = new LinkedHashMap<Double, Double>();
     
-    private final double timeStep = 0.01; //in Sekunden, wird von Praat vorgegeben
+    private final double timeStep = Clip.PRAAT_PITCH_RESOLUTION; //in Sekunden, wird von Praat vorgegeben
     
     private double initialTime;
     
@@ -47,11 +43,13 @@ public class PitchAnalyzer {
 		       
 		       pitches.put(time, pitch);
 		    }
+		    
+		    br.close();
 		}
 		catch (Exception ex) {
 			System.out.println("Die Verarbeitung der Pitch-Listing-Datei ist fehlgeschlagen.");
 			ex.printStackTrace(System.out);
-		}
+		}		
 	}
 	
 	public double timeStep() {

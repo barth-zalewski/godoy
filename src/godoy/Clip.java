@@ -11,28 +11,25 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 /**
- * Ein Clip repräsentiert einen Audio-Clip mit einer bestimmten Länge. Der Clip ist geteilt
+ * Ein Clip repräsentiert eine Audio-Datei mit einer bestimmten Länge. Der Clip ist geteilt
  * in eine Serie von gleichgroßen Frames mit spektralen Infromationen. Auf die Frames
  * der spektralen Informationen kann in beliebiger Reihenfolge zugegriffen werden.
  */
 
 public class Clip {
-    /**
-     * Nur mit diesem Format können wir arbeiten.
-     */
+    
     private static final AudioFormat AUDIO_FORMAT = new AudioFormat(16000, 16, 1, true, true);
 
-    private static final int DEFAULT_FRAME_SIZE = 480; //30 ms Frame
+    public static final double PRAAT_PITCH_RESOLUTION = 0.01; //10 ms zeitliche Auflösung der Pitch-Listings
     
-    private static final int DEFAULT_FRAME_SIZE_ZEROPADDED = 512;
+    private static final int CHUNK_SIZE_10_MS = 160; //160 Samples pro 10-ms-Chunk
+    
+    private static final int DEFAULT_FRAME_SIZE = 3 * CHUNK_SIZE_10_MS; //30 ms Frame
     
     private final List<Frame> frames = new ArrayList<Frame>();
     
     private final PitchAnalyzer pitchAnalyzer;
     
-    /**
-     * Anzahl der Samples pro Frame. 
-     */
     private final int frameSize;
     
     private Exporter exporter;
@@ -51,16 +48,16 @@ public class Clip {
         
         frameSize = DEFAULT_FRAME_SIZE;
         
-        int frameSizeZeropadded = DEFAULT_FRAME_SIZE_ZEROPADDED;
-        
-        byte[] buf = new byte[frameSize * 2]; // 16-bit Monosamples
+        byte[] buf = new byte[CHUNK_SIZE_10_MS * 2]; // 16-bit Monosamples
         int n;
         
-        double timeCounter = pitchAnalyzer.initialTime();
+        double timeCounter =  pitchAnalyzer.initialTime();
+        
+        ArrayList<double[]> chunks = new ArrayList<double[]>();
         
         /* Anfangsbytes überspringen. Orientiert sich am ersten Listeneintrag aus der Pitch-Listing-Datei */
         in.skip(Math.round(pitchAnalyzer.initialTime() * AUDIO_FORMAT.getSampleRate()) * 2);
-        
+
         while ((n = readFully(in, buf)) != -1) {             	
             if (n != buf.length) {                
                 // Mit Nullen auffüllen, sonst gibt es eine hörbare Störung am Clipende
@@ -69,31 +66,59 @@ public class Clip {
                 }
             }
             
-            /* Frame zur Analyse nur erzeugen, wenn alle 3 Steps stimmhaft */
-            if (pitchAnalyzer.isVoiced(timeCounter) && pitchAnalyzer.isVoicedNext(timeCounter) && pitchAnalyzer.isVoiced2Next(timeCounter)) {            
-	            double[] samples = new double[frameSizeZeropadded];
-	            int isamp = 0;
-	            for (; isamp < frameSize; isamp++) {
-	                int hi = buf[2 * isamp];
-	                int low = buf[2 * isamp + 1] & 0xff;
-	                int sampVal = (hi << 8) | low;            	
-	                samples[isamp] = sampVal;
-	            }
-	            
-	            double meanPitch = (pitchAnalyzer.getPitch(timeCounter) + pitchAnalyzer.getPitchNext(timeCounter) + pitchAnalyzer.getPitch2Next(timeCounter)) / 3;
+            double[] chunk = new double[CHUNK_SIZE_10_MS];
+            
+            for (int isamp = 0; isamp < CHUNK_SIZE_10_MS; isamp++) {
+                int hi = buf[2 * isamp];
+                int low = buf[2 * isamp + 1] & 0xff;
+                int sampVal = (hi << 8) | low;            	
+                chunk[isamp] = sampVal;
+            }
+            
+            chunks.add(chunk);
+        }
+        
+
+        /*
+         *  Stimmhafte Frames erzeugen
+         *  Annahme: Praat zentriert die Grundfrequenz-Angabe (f0 gilt von -5 ms bis +5 ms vom Zeitpunkt) 
+         *  */
+        
+        for (int i = 1; i < chunks.size() - 2; i++) {
+        	/* Frame zur Analyse nur erzeugen, wenn alle 3 Steps stimmhaft */
+        	if (pitchAnalyzer.isVoiced(timeCounter) && pitchAnalyzer.isVoicedNext(timeCounter) && pitchAnalyzer.isVoiced2Next(timeCounter)) {
+        		//den halben vorherigen Chunk nehmen, den aktuellen, den nächsten und den halben übernächsten
+        		double[] samples = new double[DEFAULT_FRAME_SIZE];
+        		
+        		int c = 0;
+        		for (int fi = CHUNK_SIZE_10_MS / 2; fi < CHUNK_SIZE_10_MS; fi++, c++) {
+        			samples[c] = chunks.get(i - 1)[fi];
+        		}
+        		for (int fi = 0; fi < CHUNK_SIZE_10_MS; fi++, c++) {
+        			samples[c] = chunks.get(i)[fi];
+        		}
+        		for (int fi = 0; fi < CHUNK_SIZE_10_MS; fi++, c++) {
+        			samples[c] = chunks.get(i + 1)[fi];
+        		}
+        		for (int fi = 0; fi < CHUNK_SIZE_10_MS / 2; fi++, c++) {
+        			samples[c] = chunks.get(i + 2)[fi];
+        		}
+        		
+        		double meanPitch = (pitchAnalyzer.getPitch(timeCounter) + pitchAnalyzer.getPitchNext(timeCounter) + pitchAnalyzer.getPitch2Next(timeCounter)) / 3;
 	            
 	            Frame frame = new Frame(samples, meanPitch, AUDIO_FORMAT.getSampleRate(), secondSpectrumOffset);
 	            frame.setTimePosition(timeCounter);
 	            
 	            frames.add(frame);
-            }
-            
-            timeCounter += 3 * pitchAnalyzer.timeStep(); //3, weil 30 ms für Analyse und 10 ms Praatausgabe
-            
-            //Wegen der Präzisionfehler...
-            timeCounter = Math.round(timeCounter * 1000000.0) / 1000000.0;
-                 
+        	}
+        	
+        	timeCounter += PRAAT_PITCH_RESOLUTION;
+          
+        	//Wegen der Präzisionfehler...
+        	timeCounter = Math.round(timeCounter * 1000000.0) / 1000000.0;
         }
+        
+        System.out.println("frames.size() == " + frames.size());
         
         exporter = new Exporter(frames);
         analyzer = new Analyzer(frames);
