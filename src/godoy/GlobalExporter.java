@@ -23,7 +23,7 @@ public class GlobalExporter {
 		    
 		    ig2.fillRect(0, 0, size, size);
 		    
-		    int rectWidth = size / 100,
+		    int rectWidth = size / 20,
 		    	rectHeight = size / histogramm2D.keySet().size();
 		    
 		    double maxHistogrammValue = Double.NEGATIVE_INFINITY;

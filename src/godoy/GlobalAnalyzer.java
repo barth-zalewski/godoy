@@ -23,13 +23,14 @@ public class GlobalAnalyzer {
 			ArrayList<int[]> histogramms = entry.getValue();
 			
 			if (histogramm2D.get(spectrumOffset) == null) {
-				histogramm2D.put(spectrumOffset, new int[100]);
+				histogramm2D.put(spectrumOffset, new int[20]); //5-%-Schritte
 			}
 			
 			for (int i = 0; i < histogramms.size(); i++) {
 				int[] histogramm = histogramms.get(i);
 				for (int j = 0; j < histogramm.length; j++) {
-					histogramm2D.get(spectrumOffset)[j] += histogramm[j];
+					int index5 = j / 5; //Gruppierung in 5-%-Bins
+					histogramm2D.get(spectrumOffset)[index5] += histogramm[j];
 				}
 			}
 		}

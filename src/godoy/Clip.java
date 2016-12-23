@@ -35,6 +35,8 @@ public class Clip {
     private Exporter exporter;
     
     private Analyzer analyzer;
+    
+    private ArrayList<double[]> characteristicsVectorSeries;
  
     public static Clip newInstance(File file, File pitchListingFile, double secondSpectrumOffset) throws UnsupportedAudioFileException, IOException {
         AudioFormat desiredFormat = AUDIO_FORMAT;
@@ -175,6 +177,22 @@ public class Clip {
     
     public Analyzer getAnalyzer() {
     	return analyzer;
+    }
+    
+    /* Analyse / Erkennung */
+    public void createCharacteristicsVector() {
+    	characteristicsVectorSeries = new ArrayList<double[]>();
+    	createCharacteristicsVectorDCTBased();
+    }
+    
+    private void createCharacteristicsVectorDCTBased() {
+    	for (int i = 0; i < frames.size(); i++) {
+    		ArrayList<double[]> dctCoeeficients = frames.get(i).getDCTCoeffiencts();
+    		
+    		for (int j = 0; j < dctCoeeficients.size(); j++) {
+    			characteristicsVectorSeries.add(dctCoeeficients.get(j));    			
+    		}    	    		
+    	}
     }
 
 }

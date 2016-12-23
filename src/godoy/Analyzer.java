@@ -11,8 +11,8 @@ public class Analyzer {
 	private ArrayList<double[]> peaksByFrame;
 	int[] histogramm;
 	
-	private int minFrequency = 3000,
-				maxFrequency = 6000;
+	private int minFrequency = godoy.MINIMAL_RELEVANT_FREQUENCY,
+				maxFrequency = godoy.MAXIMAL_RELEVANT_FREQUENCY;
 	
 	public Analyzer(List<Frame> data) {
 		frames = data;		
