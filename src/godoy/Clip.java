@@ -180,12 +180,12 @@ public class Clip {
     }
     
     /* Analyse / Erkennung */
-    public void createCharacteristicsVector() {
+    public ArrayList<double[]> createCharacteristicsVector() {
     	characteristicsVectorSeries = new ArrayList<double[]>();
-    	createCharacteristicsVectorDCTBased();
+    	return createCharacteristicsVectorDCTBased();
     }
     
-    private void createCharacteristicsVectorDCTBased() {
+    private ArrayList<double[]> createCharacteristicsVectorDCTBased() {
     	for (int i = 0; i < frames.size(); i++) {
     		ArrayList<double[]> dctCoeeficients = frames.get(i).getDCTCoeffiencts();
     		
@@ -193,6 +193,8 @@ public class Clip {
     			characteristicsVectorSeries.add(dctCoeeficients.get(j));    			
     		}    	    		
     	}
+    	
+    	return characteristicsVectorSeries;
     }
 
 }
