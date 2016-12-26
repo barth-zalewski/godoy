@@ -264,47 +264,45 @@ public class Frame {
     public ArrayList<double[]> getDCTCoeffiencts() {
     	ArrayList<double[]> ret = new ArrayList<double[]>();
     	
-    	int samplesAfterPeriodStart = (int)(samplesPerPeriod * godoy.T_ANALYSIS_OFFSET),
-    		samplesBetweenAnalysis = (int)(samplesPerPeriod * godoy.T_ANALYSIS_DELTA);
-    	
+    	int samplesAfterPeriodStart = (int)(samplesPerPeriod * godoy.T_ANALYSIS_OFFSET);    	
     	for (int psp = 0; psp < periodStartingPoints.length; psp++) {
-    		int periodStaringPoint = periodStartingPoints[psp];
-    		    		
-			double[] spectrum1 = spectrum1sByOffset.get(psp + samplesAfterPeriodStart),
-					 spectrum2 = spectrum2sByOffset.get(psp + samplesAfterPeriodStart);
-			
-			if (spectrum1 == null) {
-				break;
-			}
-			
-			ArrayList<Double> spectralDifferences = new ArrayList<Double>();
-			
-			for (int s = 0; s < spectrum1.length; s++) {		
-				double frequency = (double)s * 0.5 * Clip.getClassSamplingRate() / spectrum1.length;
-				if (frequency > godoy.MINIMAL_RELEVANT_FREQUENCY && frequency < godoy.MAXIMAL_RELEVANT_FREQUENCY) {
-					spectralDifferences.add(spectrum1[s] - spectrum2[s]);
+    		if (periodStartingPoints[psp] == 1) {    		    	
+				double[] spectrum1 = spectrum1sByOffset.get(psp + samplesAfterPeriodStart),
+						 spectrum2 = spectrum2sByOffset.get(psp + samplesAfterPeriodStart);
+				
+				if (spectrum1 == null) {
+					break;
 				}
-			}
-			
-			double[] spectralDifferencesArray = new double[spectralDifferences.size()];
-			
-			for (int d = 0; d < spectralDifferences.size(); d++) {
-				spectralDifferencesArray[d] = spectralDifferences.get(d);
-			}
-			
-			double[] sdaDCT = spectralDifferencesArray.clone();
-			DoubleDCT_1D dct = new DoubleDCT_1D(sdaDCT.length);
-			
-			dct.forward(sdaDCT, true);
-			
-			double[] sdaDCTShortened = new double[godoy.NUMBER_FIRST_DCT_COEFFICIENTS_FOR_CHARACTERISTICS_VECTOR];
-			
-			for (int dd = 0; dd < Math.min(sdaDCTShortened.length, sdaDCT.length); dd++) {
-				sdaDCTShortened[dd] = sdaDCT[dd];
-			}
-			
-			ret.add(sdaDCTShortened);			
-    		
+				
+				ArrayList<Double> spectralDifferences = new ArrayList<Double>();
+				
+				/* Spektrale Differenz an einem Periodenanfangszeitpunkt berechnen */
+				for (int s = 0; s < spectrum1.length; s++) {		
+					double frequency = (double)s * 0.5 * Clip.getClassSamplingRate() / spectrum1.length;
+					if (frequency > godoy.MINIMAL_RELEVANT_FREQUENCY && frequency < godoy.MAXIMAL_RELEVANT_FREQUENCY) {
+						spectralDifferences.add(spectrum1[s] - spectrum2[s]);
+					}
+				}
+				
+				double[] spectralDifferencesArray = new double[spectralDifferences.size()];
+				
+				for (int d = 0; d < spectralDifferences.size(); d++) {
+					spectralDifferencesArray[d] = spectralDifferences.get(d);
+				}
+				
+				double[] sdaDCT = spectralDifferencesArray.clone();
+				DoubleDCT_1D dct = new DoubleDCT_1D(sdaDCT.length);
+				
+				dct.forward(sdaDCT, true);
+				
+				double[] sdaDCTShortened = new double[godoy.NUMBER_FIRST_DCT_COEFFICIENTS_FOR_CHARACTERISTICS_VECTOR];
+				
+				for (int dd = 0; dd < Math.min(sdaDCTShortened.length, sdaDCT.length); dd++) {
+					sdaDCTShortened[dd] = sdaDCT[dd];
+				}
+				
+				ret.add(sdaDCTShortened);			
+    		}
     	}
     	
     	return ret;

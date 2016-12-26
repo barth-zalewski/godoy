@@ -37,13 +37,17 @@ public class Speaker {
 				File pitchListingFile = new File(fileStub + ".pitch");
 				
 				Clip clip = Clip.newInstance(wavFile, pitchListingFile, godoy.T_ANALYSIS_OFFSET);
-				cVectors = clip.createCharacteristicsVector();
-				System.out.println("cvectors.size()==" + cVectors.size());
+				trainingClips.add(clip);
+				
+				ArrayList<double[]> cVectorsThis = clip.createCharacteristicsVector();
+				for (int i = 0; i < cVectorsThis.size(); i++) {
+					cVectors.add(cVectorsThis.get(i));
+				}				
 			}
 		}
 		catch(Exception exc) {
 			System.out.println("Initialisierung fehlgeschlagen.");
-		}
+		}			
 	}
 	
 	public ArrayList<double[]> getCharacteristicsVectors() {
