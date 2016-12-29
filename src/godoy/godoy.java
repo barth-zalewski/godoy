@@ -16,7 +16,7 @@ public class godoy {
 	public static int MINIMAL_RELEVANT_FREQUENCY = 3000;
 	public static int MAXIMAL_RELEVANT_FREQUENCY = 6000;
 	
-	public static int NUMBER_FIRST_DCT_COEFFICIENTS_FOR_CHARACTERISTICS_VECTOR = 12;
+	public static int NUMBER_FIRST_DCT_COEFFICIENTS_FOR_CHARACTERISTICS_VECTOR = 3;
 	public static boolean USE_PITCH_FOR_CHARACTERISTICS = false;
 	
 	public static void main(String[] arguments) {	
@@ -70,12 +70,28 @@ public class godoy {
 		int correctlyRecognizedSpeakers = 0;		
 		for (int i = 0; i < corpusForTesting.size(); i++) {
 			HashMap<String, Integer> recognized = recognizer.recognize(corpusForTesting.get(i));
+			int maxRecognizedProbability = 0;
+			String idOfSpeakerWithMaxProbability = "";
 			
-			System.out.println(corpusForTesting.get(i).getId() + " has been recognized as:");
+			
 			for (HashMap.Entry<String, Integer> estimate : recognized.entrySet()) {
-				System.out.println(estimate.getKey() + " with probability of " + estimate.getValue() + "%");
+				if (estimate.getValue() > maxRecognizedProbability) {
+					maxRecognizedProbability = estimate.getValue();
+					idOfSpeakerWithMaxProbability = estimate.getKey();
+				}
 			}
+			
+			if (idOfSpeakerWithMaxProbability.equals(corpusForTesting.get(i).getId())) {
+				correctlyRecognizedSpeakers++;
+				System.out.println(corpusForTesting.get(i).getId() + " has been recognized with probability of " + maxRecognizedProbability + "%");
+			}
+			else {
+				System.out.println(corpusForTesting.get(i).getId() + " has NOT been recognized.");
+			}					
 		}
+		
+		System.out.println("==================================");
+		System.out.println("Recognition rate = " + ((int)(100 * correctlyRecognizedSpeakers / corpusForTesting.size())) + "%");
 		
 		
 		
