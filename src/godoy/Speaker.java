@@ -6,38 +6,29 @@ import java.util.ArrayList;
 public class Speaker {
 	private String directoryName;
 	
-	private ArrayList<String> trainingClipsFilenameStubs;
-	private ArrayList<String> recognitionClipsFilenameStubs;
-	
-	private ArrayList<Clip> trainingClips;
-	private ArrayList<Clip> recognitionClips;
+	private ArrayList<String> clipsFilenameStubs;
 	
 	private ArrayList<double[]> cVectors;
 	
 	public Speaker(String directoryName) {
 		this.directoryName = directoryName;
-		System.out.println("Speaker inited with: " + directoryName);
-		trainingClipsFilenameStubs = new ArrayList<String>();
-		recognitionClipsFilenameStubs = new ArrayList<String>();
 		
-		trainingClips = new ArrayList<Clip>();
-		recognitionClips = new ArrayList<Clip>();
+		clipsFilenameStubs = new ArrayList<String>();		
 		
 		cVectors = new ArrayList<double[]>();
 	}
 	
-	public void addTrainingClip(String fileName) {
-		trainingClipsFilenameStubs.add(fileName);
+	public void addClip(String fileName) {
+		clipsFilenameStubs.add(fileName);
 	}
 	
-	public void initializeTrainingClips() {
+	public void initializeClips() {
 		try {
-			for (String fileStub : trainingClipsFilenameStubs) {
+			for (String fileStub : clipsFilenameStubs) {
 				File wavFile = new File(fileStub + ".wav");
 				File pitchListingFile = new File(fileStub + ".pitch");
 				
-				Clip clip = Clip.newInstance(wavFile, pitchListingFile, godoy.T_ANALYSIS_OFFSET);
-				trainingClips.add(clip);
+				Clip clip = Clip.newInstance(wavFile, pitchListingFile, godoy.T_ANALYSIS_OFFSET);				
 				
 				ArrayList<double[]> cVectorsThis = clip.createCharacteristicsVector();
 				for (int i = 0; i < cVectorsThis.size(); i++) {
@@ -52,5 +43,9 @@ public class Speaker {
 	
 	public ArrayList<double[]> getCharacteristicsVectors() {
 		return cVectors;
+	}
+	
+	public String getId() {
+		return directoryName;
 	}
 }

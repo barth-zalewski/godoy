@@ -2,6 +2,7 @@ package godoy;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 import godoy.Clip;
@@ -16,6 +17,7 @@ public class godoy {
 	public static int MAXIMAL_RELEVANT_FREQUENCY = 6000;
 	
 	public static int NUMBER_FIRST_DCT_COEFFICIENTS_FOR_CHARACTERISTICS_VECTOR = 12;
+	public static boolean USE_PITCH_FOR_CHARACTERISTICS = false;
 	
 	public static void main(String[] arguments) {	
 		System.out.println("Programm startet.");
@@ -58,12 +60,22 @@ public class godoy {
 		CorpusExtractor.onlyMales();
 		
 		/* Initialisiert alle Sprecher mit den zugehörigen Merkmalvektorfolgen */
-		ArrayList<Speaker> corpus = CorpusExtractor.getCorpusForApplicationTraining("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");
+		ArrayList<Speaker> corpusForTraining = CorpusExtractor.getCorpusForApplicationTraining("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");		
 		Recognizer recognizer = new Recognizer();
-		recognizer.train(corpus);
+		recognizer.train(corpusForTraining);
 		
+		ArrayList<Speaker> corpusForTesting = CorpusExtractor.getCorpusForApplicationTesting("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");	
 		
-		
+		//Prozentuale Erkennungsrate speichern
+		int correctlyRecognizedSpeakers = 0;		
+		for (int i = 0; i < corpusForTesting.size(); i++) {
+			HashMap<String, Integer> recognized = recognizer.recognize(corpusForTesting.get(i));
+			
+			System.out.println(corpusForTesting.get(i).getId() + " has been recognized as:");
+			for (HashMap.Entry<String, Integer> estimate : recognized.entrySet()) {
+				System.out.println(estimate.getKey() + " with probability of " + estimate.getValue() + "%");
+			}
+		}
 		
 		
 		
