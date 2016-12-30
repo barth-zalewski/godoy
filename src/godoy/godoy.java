@@ -73,11 +73,15 @@ public class godoy {
 			int maxRecognizedProbability = 0;
 			String idOfSpeakerWithMaxProbability = "";
 			
+			int recognizedProbabilityOfThis = 0;
 			
 			for (HashMap.Entry<String, Integer> estimate : recognized.entrySet()) {
 				if (estimate.getValue() > maxRecognizedProbability) {
 					maxRecognizedProbability = estimate.getValue();
 					idOfSpeakerWithMaxProbability = estimate.getKey();
+				}
+				if (estimate.getKey().equals(corpusForTesting.get(i).getId())) {
+					recognizedProbabilityOfThis = estimate.getValue();
 				}
 			}
 			
@@ -86,7 +90,7 @@ public class godoy {
 				System.out.println(corpusForTesting.get(i).getId() + " has been recognized with probability of " + maxRecognizedProbability + "%");
 			}
 			else {
-				System.out.println(corpusForTesting.get(i).getId() + " has NOT been recognized.");
+				System.out.println(corpusForTesting.get(i).getId() + " has NOT been recognized. (" + recognizedProbabilityOfThis + "% :" + maxRecognizedProbability + "% for " + idOfSpeakerWithMaxProbability + ")");
 			}					
 		}
 		

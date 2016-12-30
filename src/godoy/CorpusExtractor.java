@@ -76,7 +76,7 @@ public class CorpusExtractor {
 	        		String onlyPath = absolutePathWithoutExtension.substring(0, absolutePathWithoutExtension.lastIndexOf(File.separator));
 	        		onlyPath = onlyPath.substring(onlyPath.lastIndexOf(File.separator) + 1);
 	        		
-	        		if ((isTraining && path.indexOf("test--") == -1) || (!isTraining && path.indexOf("test--") > -1)) {
+	        		if ((isTraining && path.indexOf("test--") == -1) || (!isTraining && path.indexOf("test--") > -1)) {	        		
 	        			if (stringCorpus.get(onlyPath) == null) {
 	        				stringCorpus.put(onlyPath, new ArrayList<String>());
 	        			}

@@ -28,7 +28,7 @@ public class Speaker {
 				File wavFile = new File(fileStub + ".wav");
 				File pitchListingFile = new File(fileStub + ".pitch");
 				
-				Clip clip = Clip.newInstance(wavFile, pitchListingFile, godoy.T_ANALYSIS_OFFSET);				
+				Clip clip = Clip.newInstance(wavFile, pitchListingFile, godoy.T_ANALYSIS_OFFSET);	
 				
 				ArrayList<double[]> cVectorsThis = clip.createCharacteristicsVector();
 				for (int i = 0; i < cVectorsThis.size(); i++) {

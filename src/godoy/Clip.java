@@ -182,7 +182,21 @@ public class Clip {
     /* Analyse / Erkennung */
     public ArrayList<double[]> createCharacteristicsVector() {
     	characteristicsVectorSeries = new ArrayList<double[]>();
-    	return createCharacteristicsVectorDCTBased();
+    	return createCharacteristicsVectorGodoyBased();
+    	//return createCharacteristicsVectorFunctionValueBased();
+    	//return createCharacteristicsVectorDCTBased();
+    }
+    
+    private ArrayList<double[]> createCharacteristicsVectorFunctionValueBased() {
+    	for (int i = 0; i < frames.size(); i++) {
+    		ArrayList<double[]> diffValues = frames.get(i).getDiffValues();
+    		
+    		for (int j = 0; j < diffValues.size(); j++) {
+    			characteristicsVectorSeries.add(diffValues.get(j));    			
+    		}    	    		
+    	}
+    	
+    	return characteristicsVectorSeries;
     }
     
     private ArrayList<double[]> createCharacteristicsVectorDCTBased() {
@@ -195,6 +209,54 @@ public class Clip {
     	}
     	
     	return characteristicsVectorSeries;
+    }
+    
+    private ArrayList<double[]> createCharacteristicsVectorGodoyBased() {
+    	ArrayList<double[]> all = new ArrayList<double[]>();
+    	
+    	int[] histogramm = analyzer.getHistogramm();
+		
+		int maxI = -1, maxPeak = -1;
+		
+		for (int i = 0; i < histogramm.length; i++) {					
+			if (histogramm[i] > maxPeak) {
+				maxPeak = histogramm[i];
+				maxI = i;
+			}
+		}
+		
+		for (int i = 0; i < frames.size(); i++) {
+			ArrayList<double[]> peaksCoordinates = frames.get(i).getPeaksCoordinates(maxI);   	
+			
+			for (int j = 0; j < peaksCoordinates.size(); j++) {
+				all.add(peaksCoordinates.get(j));    			
+    		}
+    	}
+		
+		double[] sums = new double[all.get(0).length];
+		
+		int chunksSize = 3;
+		
+		for (int i = 0; i < all.size(); i++) {
+			double[] thisOne = all.get(i);
+			
+			if (i % chunksSize == 0 && i != 0) {
+				double[] chunked = new double[thisOne.length];
+				for (int j = 0; j < sums.length; j++) {
+					chunked[j] = sums[j] / chunksSize;
+					sums[j] = 0;
+				}		
+				
+				characteristicsVectorSeries.add(chunked);
+			}
+			
+			
+			for (int j = 0; j < thisOne.length; j++) {
+				sums[j] += thisOne[j];
+			}
+		}
+		//System.out.println("cvsSize=" + characteristicsVectorSeries.size());
+    	return all;
     }
 
 }

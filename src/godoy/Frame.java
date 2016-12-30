@@ -45,6 +45,8 @@ public class Frame {
     
     private double secondSpectrumOffset;
     
+    float sampleRate;
+    
     private static final double DB_REFERENCE = 1E3;
     
     public Frame(double[] timeData, double pitch, float sampleRate, double secondSpectrumOffset) {
@@ -52,6 +54,7 @@ public class Frame {
         int frameSize = timeData.length;
         this.pitch = pitch;
         this.secondSpectrumOffset = secondSpectrumOffset;
+        this.sampleRate = sampleRate;
         
         windowDuration = Math.max((1 / pitch) / 3, 0.0025); //GODOY
         
@@ -308,4 +311,96 @@ public class Frame {
     	return ret;
     }
 
+    public ArrayList<double[]> getDiffValues() {
+    	ArrayList<double[]> ret = new ArrayList<double[]>();
+    	
+    	int samplesAfterPeriodStart = (int)(samplesPerPeriod * godoy.T_ANALYSIS_OFFSET);    	
+    	for (int psp = 0; psp < periodStartingPoints.length; psp++) {
+    		if (periodStartingPoints[psp] == 1) {    		    	
+				double[] spectrum1 = spectrum1sByOffset.get(psp + samplesAfterPeriodStart),
+						 spectrum2 = spectrum2sByOffset.get(psp + samplesAfterPeriodStart);
+				
+				if (spectrum1 == null) {
+					break;
+				}
+				
+				ArrayList<Double> spectralDifferences = new ArrayList<Double>();
+				
+				/* Spektrale Differenz an einem Periodenanfangszeitpunkt berechnen */
+				for (int s = 0; s < spectrum1.length; s++) {		
+					double frequency = (double)s * 0.5 * Clip.getClassSamplingRate() / spectrum1.length;
+					if (frequency > godoy.MINIMAL_RELEVANT_FREQUENCY && frequency < godoy.MAXIMAL_RELEVANT_FREQUENCY) {
+						spectralDifferences.add(spectrum1[s] - spectrum2[s]);
+					}
+				}
+				
+				double[] spectralDifferencesArray = new double[spectralDifferences.size()];
+				
+				for (int d = 0; d < spectralDifferences.size(); d++) {
+					spectralDifferencesArray[d] = spectralDifferences.get(d);
+				}
+				
+				ret.add(spectralDifferencesArray);			
+    		}
+    	}
+    	
+    	return ret;
+    }
+
+    public ArrayList<double[]> getPeaksCoordinates(int percentage) {
+    	double p = percentage / 100;
+    	
+        int samplesAfterPeriodStart = (int)(p * samplesPerPeriod);
+        
+        /* 0: pitch, 1: percentage, 2: frequency of peak, 3: peak size */
+        ArrayList<double[]> ret = new ArrayList<double[]>();
+        ArrayList<double[]> all = new ArrayList<double[]>();
+        
+        double[] sums = new double[4];
+        
+        for (int psp = 0; psp < periodStartingPoints.length; psp++) {
+    		if (periodStartingPoints[psp] == 1) {    		    	
+				double[] spectrum1 = spectrum1sByOffset.get(psp + samplesAfterPeriodStart),
+						 spectrum2 = spectrum2sByOffset.get(psp + samplesAfterPeriodStart);
+				
+				if (spectrum1 == null) {
+					break;
+				}
+				
+				/* Spektrale Differenz an einem Periodenanfangszeitpunkt berechnen */
+				double frequencyOfPeak = 0, maxDiff = Double.NEGATIVE_INFINITY;
+				
+				for (int s = 0; s < spectrum1.length; s++) {		
+					double frequency = (double)s * 0.5 * Clip.getClassSamplingRate() / spectrum1.length;
+					if (frequency > godoy.MINIMAL_RELEVANT_FREQUENCY && frequency < godoy.MAXIMAL_RELEVANT_FREQUENCY) {
+						double spectralDiff = spectrum1[s] - spectrum2[s];
+						if (spectralDiff > maxDiff) {
+							maxDiff = spectralDiff;
+							frequencyOfPeak = frequency;
+						}
+					}
+				}
+				
+				double[] coordinates = new double[4];
+				coordinates[0] = pitch;
+				coordinates[1] = percentage;
+				coordinates[2] = frequencyOfPeak;
+				coordinates[3] = maxDiff;
+				
+				sums[0] += 100.0 * pitch;
+				sums[1] += 0.5 * percentage;
+				sums[2] += 100.0 * frequencyOfPeak;
+				sums[3] += 0.5 * maxDiff;
+				
+				//System.out.println("pitch=" + pitch + ",perc=" + percentage + ",f=" + frequencyOfPeak + ",diff=" + maxDiff);
+								
+				all.add(coordinates);			
+    		}
+    	}
+        
+        double[] res = { sums[0] / all.size(), sums[1] / all.size(), sums[2] / all.size(), sums[3] / all.size() };
+        ret.add(res);
+        
+        return ret;
+    }
 }

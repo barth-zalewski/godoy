@@ -19,8 +19,7 @@ public class Recognizer {
 		}
 		
 		int[] groups = new int[lengthOfGroupArray];
-		double[][] data = new double[lengthOfGroupArray][godoy.NUMBER_FIRST_DCT_COEFFICIENTS_FOR_CHARACTERISTICS_VECTOR];
-		String groupsAsString = "";
+		double[][] data = new double[lengthOfGroupArray][corpus.get(0).getCharacteristicsVectors().get(0).length];		
 		
 		int c = 0;
 		
@@ -29,13 +28,11 @@ public class Recognizer {
 			groupNumberToSpeaker.put(i + 1, corpus.get(i));
 			
 			for (int j = 0; j < corpus.get(i).getCharacteristicsVectors().size(); j++) {
-				groups[c] = i + 1;
-				groupsAsString += "[" + (c) + "]=" + (i + 1) + ",";
+				groups[c] = i + 1;				
 				data[c] = corpus.get(i).getCharacteristicsVectors().get(j);
 				c++;
 			}
-		}
-		System.out.println("groups=" + groupsAsString);
+		}		
 		lda = new LDA(data, groups, true);
 	}
 	
