@@ -182,9 +182,10 @@ public class Clip {
     /* Analyse / Erkennung */
     public ArrayList<double[]> createCharacteristicsVector() {
     	characteristicsVectorSeries = new ArrayList<double[]>();
-    	return createCharacteristicsVectorGodoyBased();
+    	//return createCharacteristicsVectorGodoyBased();
     	//return createCharacteristicsVectorFunctionValueBased();
     	//return createCharacteristicsVectorDCTBased();
+    	return createCharacteristicsVectorMFCCBased();
     }
     
     private ArrayList<double[]> createCharacteristicsVectorFunctionValueBased() {
@@ -257,6 +258,17 @@ public class Clip {
 		}
 		//System.out.println("cvsSize=" + characteristicsVectorSeries.size());
     	return all;
+    }
+    
+    private ArrayList<double[]> createCharacteristicsVectorMFCCBased() {
+    	for (int i = 0; i < frames.size(); i++) {
+    		ArrayList<double[]> mfccCoeeficients = frames.get(i).getMFCCCoeffiencts();
+    		
+    		for (int j = 0; j < mfccCoeeficients.size(); j++) {
+    			characteristicsVectorSeries.add(mfccCoeeficients.get(j));    			
+    		}    	    		
+    	}
+    	return characteristicsVectorSeries;
     }
 
 }

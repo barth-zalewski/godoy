@@ -66,9 +66,6 @@ public class Frame {
         
         int samplesPerWindowHalf = (int)(samplesPerWindow / 2);
         
-        /* FFT für das gesamte Frame */
-        DoubleFFT_1D dct = getDctInstance(frameSize);
-        
         double[] wholeFrameSamples = timeData.clone();
 
         /* Envelope */
@@ -80,15 +77,22 @@ public class Frame {
         windowFuncWholeFrame = new HammingWindowFunction(frameSize);
         windowFuncWholeFrame.applyWindow(wholeFrameSamples);
         
-        double[] wholeFrameFFT = wholeFrameSamples.clone();       
-        dct.realForward(wholeFrameFFT); //Nur die Hälfte der FFT, negative Nyqist-Frequenz nicht dabei
+        /* FFT für das gesamte Frame */
+        int fftSizeFrame = Utils.nextPowerOfTwo(frameSize);
+        DoubleFFT_1D fft = getFFTInstance(fftSizeFrame);        
         
-        double[] wholeFrameSpectrum = new double[(int)(wholeFrameFFT.length / 2)];
+        double[] wholeFrameFFT = new double[fftSizeFrame * 2];
+        
+        /* In komplexe Samples konvertieren (interleaved, Imaginärteil = 0) */
+        for (int wt = 0; wt < wholeFrameSamples.length; wt++) {
+        	wholeFrameFFT[wt * 2] = wholeFrameSamples[wt];
+        }
+        fft.complexForward(wholeFrameFFT); 
+        
+        double[] wholeFrameSpectrum = new double[fftSizeFrame];        
         
         for (int ffti = 0; ffti < wholeFrameSpectrum.length; ffti++) {
-        	 double spectralValue = Math.sqrt(Math.pow(wholeFrameFFT[ffti * 2], 2) + Math.pow(wholeFrameFFT[ffti * 2 + 1], 2));
-        	 //in dB umrechnen
-        	 spectralValue = 20.0 * Math.log10(spectralValue / DB_REFERENCE);
+        	 double spectralValue = Math.sqrt(Math.pow(wholeFrameFFT[ffti * 2], 2) + Math.pow(wholeFrameFFT[ffti * 2 + 1], 2));        	 
         	 wholeFrameSpectrum[ffti] = spectralValue;
         }
         
@@ -120,7 +124,7 @@ public class Frame {
         /* FFT für Snapshots */
     	int snapshotLengthZeroPadded = 512; //(int)(Math.pow(2, powerOfTwoExpI + 2));
     	
-        DoubleFFT_1D fftSnapshot = getDctInstance(snapshotLengthZeroPadded);
+        DoubleFFT_1D fftSnapshot = getFFTInstance(snapshotLengthZeroPadded);
         
         // Fensterfunktion erzeugen
         windowFuncSnapshot = new HammingWindowFunction(samplesPerWindow);                   
@@ -187,7 +191,7 @@ public class Frame {
         
     }
 
-    private static DoubleFFT_1D getDctInstance(int frameSize) {
+    private static DoubleFFT_1D getFFTInstance(int frameSize) {
     	DoubleFFT_1D dct = dctInstances.get(frameSize);
         if (dct == null) {
             dct = new DoubleFFT_1D(frameSize);
@@ -402,5 +406,26 @@ public class Frame {
         ret.add(res);
         
         return ret;
+    }
+    
+    public ArrayList<double[]> getMFCCCoeffiencts() {
+    	ArrayList<double[]> ret = new ArrayList<double[]>();
+    	
+    	/* Schritt 1 + 2: DFT des ganzen Frames ist schon gegeben, wir machen daraus ein "Periodogram estimate" */
+    	double[] periodogramEstimate = new double[wholeFrameSpectrum.length];
+    	
+    	for (int wfs = 0; wfs < wholeFrameSpectrum.length; wfs++) {
+    		periodogramEstimate[wfs] = (1 / wholeFrameSpectrum.length) * Math.pow(wholeFrameSpectrum[wfs], 2); // (1 / N) * S_i ^2
+    	}
+    	
+    	/* Schritt 3: Mel-Filterbank */
+    	MelFilterbank melFilterbank = new MelFilterbank(periodogramEstimate); /* Rein: Periodogramm der Länge = FFT-Länge */
+    	double[] melTransformedData = melFilterbank.transform(); /* Raus: Spektrum bearbeitet mit der Mel-Filterbank der Länge <Anzahl Filterbanken> */
+    	
+    	/* Schritt 4: Logarithmierung */
+    	
+    	/* Schritt 5: DCT (Cepstrum) */
+    	
+    	return ret;
     }
 }

@@ -74,11 +74,6 @@ public class EnvelopeDetector {
 			
 			double[] z = { X[i * 2], X[i * 2 + 1] };
 			
-//			double epsilon = 1E-5;
-//			
-//			z[0] = z[0] < epsilon ? 0 : z[0];
-//			z[1] = z[1] < epsilon ? 0 : z[1];
-//			
 			if (i < newDimension / 2) {
 				rotate90DegreesNegative(z);				
 			}

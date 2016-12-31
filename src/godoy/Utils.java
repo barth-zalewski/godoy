@@ -14,7 +14,7 @@ public class Utils {
 			while (i <= n) {
 				i *= 2;
 			}
-			return i * 2;
+			return i;
 		}
 	}
 
