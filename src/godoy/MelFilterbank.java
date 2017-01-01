@@ -7,7 +7,7 @@ public class MelFilterbank {
 							NUMBER_OF_FILTERBANKS = 26;
 	
 	double[] data;
-	double[] f;
+	int[] f;
 	
 	public MelFilterbank(double[] data) {
 		double[] shortenedData = new double[data.length / 2];
@@ -38,10 +38,10 @@ public class MelFilterbank {
 		}		
 		
 		/* 3. Vektor f(i) erzeugen */
-		f = new double[NUMBER_OF_FILTERBANKS + 2];
+		f = new int[NUMBER_OF_FILTERBANKS + 2];
 		
 		for (int i = 0; i < h.length; i++) {
-			f[i] = Math.floor((2 * data.length + 1) * h[i] / Clip.getClassSamplingRate());					
+			f[i] = (int)Math.floor((2 * data.length + 1) * h[i] / Clip.getClassSamplingRate());					
 		}
 		
 		/* 4. Filterbanken erzeugen */
@@ -52,10 +52,30 @@ public class MelFilterbank {
 		
 		//Filterbank-Matrix erstellen
 		double[][] filterbanks2DArray = new double[data.length][NUMBER_OF_FILTERBANKS];
-		Matrix filterbanksM = new Matrix(filterbanks2DArray);
-
-		//Todo: Koeffizienten füllen
+						
+		for (int j = 1; j < f.length - 1; j++) { //Filterbank-Matrix spaltenweise füllen (daher i/j umgedreht)
+			int lowerBin = f[j - 1], maxBin = f[j], upperBin = f[j + 1];
+			
+			for (int i = 0; i < data.length; i++) {
+				if (i < lowerBin || i > upperBin) {
+					filterbanks2DArray[i][j - 1] = 0;
+				}
+				else {
+					if (i < maxBin) {
+						filterbanks2DArray[i][j - 1] = (double)(i - lowerBin) / (maxBin - lowerBin);
+					}
+					else if (i > maxBin) {
+						filterbanks2DArray[i][j - 1] = (double)(upperBin - i) / (upperBin - maxBin);
+					}
+					else {
+						filterbanks2DArray[i][j - 1] = 1;
+					}
+				}
+			}
+		}		
 		
+		Matrix filterbanksM = new Matrix(filterbanks2DArray);
+				
 		Matrix resultM = dataM.times(filterbanksM);
 		
 		return resultM.getArrayCopy()[0];

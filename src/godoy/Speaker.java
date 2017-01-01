@@ -38,6 +38,7 @@ public class Speaker {
 		}
 		catch(Exception exc) {
 			System.out.println("Initialisierung fehlgeschlagen.");
+			exc.printStackTrace(System.out);
 		}			
 	}
 	

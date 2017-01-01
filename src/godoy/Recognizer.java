@@ -41,7 +41,7 @@ public class Recognizer {
 		ArrayList<double[]> vectors = unknownSpeaker.getCharacteristicsVectors();
 		
 		for (int i = 0; i < vectors.size(); i++) {
-			int predictedGroup = lda.predict(vectors.get(i));
+			int predictedGroup = lda.predict(vectors.get(i));			
 			Speaker recognizedSpeaker = groupNumberToSpeaker.get(predictedGroup);
 			recognizedAs.add(recognizedSpeaker);			
 		}

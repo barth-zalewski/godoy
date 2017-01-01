@@ -255,8 +255,7 @@ public class Clip {
 			for (int j = 0; j < thisOne.length; j++) {
 				sums[j] += thisOne[j];
 			}
-		}
-		//System.out.println("cvsSize=" + characteristicsVectorSeries.size());
+		}		
     	return all;
     }
     
@@ -264,10 +263,11 @@ public class Clip {
     	for (int i = 0; i < frames.size(); i++) {
     		ArrayList<double[]> mfccCoeeficients = frames.get(i).getMFCCCoeffiencts();
     		
-    		for (int j = 0; j < mfccCoeeficients.size(); j++) {
+    		for (int j = 0; j < mfccCoeeficients.size(); j++) {    			
     			characteristicsVectorSeries.add(mfccCoeeficients.get(j));    			
     		}    	    		
     	}
+    	
     	return characteristicsVectorSeries;
     }
 

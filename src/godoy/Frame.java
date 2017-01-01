@@ -12,6 +12,9 @@ import org.jtransforms.dct.DoubleDCT_1D;
  * frequency components of this frame are modifiable.
  */
 public class Frame {    
+	
+	public static final int KEEP_MFFC_COEFFICIENTS = 18;
+	
     private double[] allSamples;
     
     private int[] periodStartingPoints;
@@ -415,16 +418,32 @@ public class Frame {
     	double[] periodogramEstimate = new double[wholeFrameSpectrum.length];
     	
     	for (int wfs = 0; wfs < wholeFrameSpectrum.length; wfs++) {
-    		periodogramEstimate[wfs] = (1 / wholeFrameSpectrum.length) * Math.pow(wholeFrameSpectrum[wfs], 2); // (1 / N) * S_i ^2
+    		periodogramEstimate[wfs] = (1.0 / wholeFrameSpectrum.length) * Math.pow(wholeFrameSpectrum[wfs], 2); // (1 / N) * S_i ^2
     	}
     	
     	/* Schritt 3: Mel-Filterbank */
     	MelFilterbank melFilterbank = new MelFilterbank(periodogramEstimate); /* Rein: Periodogramm der Länge = FFT-Länge */
     	double[] melTransformedData = melFilterbank.transform(); /* Raus: Spektrum bearbeitet mit der Mel-Filterbank der Länge <Anzahl Filterbanken> */
     	
+    	
     	/* Schritt 4: Logarithmierung */
+    	for (int m = 0; m < melTransformedData.length; m++) {
+    		melTransformedData[m] = Math.log10(melTransformedData[m]);
+    	}    	
     	
     	/* Schritt 5: DCT (Cepstrum) */
+    	DoubleDCT_1D dct = new DoubleDCT_1D(melTransformedData.length);
+    	
+    	dct.forward(melTransformedData, true);
+    	
+    	double[] finalMFCC = new double[KEEP_MFFC_COEFFICIENTS];    	
+    	
+    	for (int i = 0; i < finalMFCC.length; i++) {
+    		finalMFCC[i] = melTransformedData[i];
+    	}    	
+    	
+    	/* Nur ein Merkmalvektor pro Frame */
+    	ret.add(finalMFCC);
     	
     	return ret;
     }
