@@ -185,7 +185,8 @@ public class Clip {
     	//return createCharacteristicsVectorGodoyBased();
     	//return createCharacteristicsVectorFunctionValueBased();
     	//return createCharacteristicsVectorDCTBased();
-    	return createCharacteristicsVectorMFCCBased();
+    	return createCharacteristicsVectorMFCCBased();    	
+    	//return createCharacteristicsVectorCombined();
     }
     
     private ArrayList<double[]> createCharacteristicsVectorFunctionValueBased() {
@@ -233,29 +234,30 @@ public class Clip {
 				all.add(peaksCoordinates.get(j));    			
     		}
     	}
+//		
+//		double[] sums = new double[all.get(0).length];
+//		
+//		int chunksSize = 3;
+//		
+//		for (int i = 0; i < all.size(); i++) {
+//			double[] thisOne = all.get(i);
+//			
+//			if (i % chunksSize == 0 && i != 0) {
+//				double[] chunked = new double[thisOne.length];
+//				for (int j = 0; j < sums.length; j++) {
+//					chunked[j] = sums[j] / chunksSize;
+//					sums[j] = 0;
+//				}		
+//				
+//				characteristicsVectorSeries.add(chunked);
+//			}
+//			
+//			
+//			for (int j = 0; j < thisOne.length; j++) {
+//				sums[j] += thisOne[j];
+//			}
+//		}		
 		
-		double[] sums = new double[all.get(0).length];
-		
-		int chunksSize = 3;
-		
-		for (int i = 0; i < all.size(); i++) {
-			double[] thisOne = all.get(i);
-			
-			if (i % chunksSize == 0 && i != 0) {
-				double[] chunked = new double[thisOne.length];
-				for (int j = 0; j < sums.length; j++) {
-					chunked[j] = sums[j] / chunksSize;
-					sums[j] = 0;
-				}		
-				
-				characteristicsVectorSeries.add(chunked);
-			}
-			
-			
-			for (int j = 0; j < thisOne.length; j++) {
-				sums[j] += thisOne[j];
-			}
-		}		
     	return all;
     }
     
@@ -269,6 +271,31 @@ public class Clip {
     	}
     	
     	return characteristicsVectorSeries;
-    }
+    }    
+    
+    private ArrayList<double[]>createCharacteristicsVectorCombined() {
+    	ArrayList<double[]> all = new ArrayList<double[]>();
+    	
+    	int[] histogramm = analyzer.getHistogramm();
+		
+		int maxI = -1, maxPeak = -1;
+		
+		for (int i = 0; i < histogramm.length; i++) {					
+			if (histogramm[i] > maxPeak) {
+				maxPeak = histogramm[i];
+				maxI = i;
+			}
+		}
+		
+    	for (int i = 0; i < frames.size(); i++) {
+    		ArrayList<double[]> combinedCoeeficients = frames.get(i).getCombinedCoefficients(maxI);
+    		
+    		for (int j = 0; j < combinedCoeeficients.size(); j++) {    			
+    			characteristicsVectorSeries.add(combinedCoeeficients.get(j));    			
+    		}    	    		
+    	}
+    	
+    	return characteristicsVectorSeries;
+    }    
 
 }

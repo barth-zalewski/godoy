@@ -388,24 +388,25 @@ public class Frame {
 					}
 				}
 				
-				double[] coordinates = new double[4];
+				double[] coordinates = new double[2];
 				coordinates[0] = pitch;
-				coordinates[1] = percentage;
-				coordinates[2] = frequencyOfPeak;
-				coordinates[3] = maxDiff;
+				//coordinates[1] = percentage;
+				coordinates[1] = frequencyOfPeak;
+				//coordinates[3] = maxDiff;
 				
-				sums[0] += 100.0 * pitch;
-				sums[1] += 0.5 * percentage;
-				sums[2] += 100.0 * frequencyOfPeak;
-				sums[3] += 0.5 * maxDiff;
+				sums[0] += pitch;
+				//sums[1] += percentage;
+				sums[1] += frequencyOfPeak;
+				//sums[3] += maxDiff;
 				
 				//System.out.println("pitch=" + pitch + ",perc=" + percentage + ",f=" + frequencyOfPeak + ",diff=" + maxDiff);
-								
-				all.add(coordinates);			
+											
+				all.add(coordinates);
     		}
     	}
         
-        double[] res = { sums[0] / all.size(), sums[1] / all.size(), sums[2] / all.size(), sums[3] / all.size() };
+        //double[] res = { sums[0] / all.size(), sums[1] / all.size(), sums[2] / all.size(), sums[3] / all.size() };
+        double[] res = { sums[0] / all.size(), sums[1] / all.size() };
         ret.add(res);
         
         return ret;
@@ -439,12 +440,35 @@ public class Frame {
     	double[] finalMFCC = new double[KEEP_MFFC_COEFFICIENTS];    	
     	
     	for (int i = 0; i < finalMFCC.length; i++) {
-    		finalMFCC[i] = melTransformedData[i];
+    		finalMFCC[i] = melTransformedData[i + 1]; //removing the zeroth coefficient to mitigate effects of energy differences between frames
     	}    	
     	
     	/* Nur ein Merkmalvektor pro Frame */
     	ret.add(finalMFCC);
     	
     	return ret;
+    }
+    
+    public ArrayList<double[]> getCombinedCoefficients(int percentage) {
+    	ArrayList<double[]> godoy = getPeaksCoordinates(percentage),
+    						mfcc = getMFCCCoeffiencts(),
+    						combined = new ArrayList<double[]>();
+    	
+    	/* Sowohl Godoy-Methode als auch MFCC-Methode liefern nur EINEN Vektor pro Frame. Damit ist das Zusammenführen leicht. */
+    	double[] godoyVector = new double[]{ godoy.get(0)[0], godoy.get(0)[1] },
+    	   		 mfccVector = mfcc.get(0),
+    	    	 combinedVector = new double[godoyVector.length + mfccVector.length];
+    	
+    	for (int i = 0; i < godoyVector.length; i++) {
+    		combinedVector[i] = godoyVector[i];
+    	}
+    	
+    	for (int i = 0; i < mfccVector.length; i++) {
+    		combinedVector[i + godoyVector.length] = mfccVector[i];
+    	}
+    	
+    	combined.add(combinedVector);
+    	
+    	return combined;
     }
 }
