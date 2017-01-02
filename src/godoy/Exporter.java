@@ -703,4 +703,180 @@ public class Exporter {
 		    ex.printStackTrace();
 		}
 	}
+	
+
+	public void exportSpectrogrammFullFrames(String filename) {
+		try {
+			ArrayList<double[]> spectrogramm = analyzer.getSpectrogrammFullFrames();
+			
+			int pixelsProFrequency = 2, // Höhe
+			    pixelsProFrame = 20; // Breite
+			
+			/* Maximalen Wert finden */
+			double maxValue = Double.NEGATIVE_INFINITY, minValue = Double.POSITIVE_INFINITY;
+			
+			for (int i = 0; i < spectrogramm.size(); i++) {
+				double[] spectrum = spectrogramm.get(i);
+				for (int j = 0; j < spectrum.length; j++) {
+					maxValue = Math.max(maxValue, spectrum[j]);
+					minValue = Math.min(minValue, spectrum[j]);
+				}
+			}
+			
+			maxValue = Math.log10(maxValue);
+			minValue = Math.log10(minValue);			
+			
+			int width = pixelsProFrame * spectrogramm.size(),
+				height = pixelsProFrequency * spectrogramm.get(0).length;
+			
+			BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+			
+		    Graphics2D ig2 = bi.createGraphics();
+	
+	        ig2.setPaint(Color.white);
+	        ig2.setColor(Color.white);
+		    
+		    ig2.fillRect(0, 0, width, height);
+		    
+		    /* Für die Deep-Valley-Linie */		    
+		    int prevX = -1, prevY = -1;
+		    
+		    int sumMinJ = 0;
+		    
+		    for (int i = 0; i < spectrogramm.size(); i++) {
+				double[] spectrum = spectrogramm.get(i);
+
+				double min = Double.POSITIVE_INFINITY;
+				int minJ = -1;
+				
+				for (int j = 0; j < spectrum.length; j++) {
+					int grayscale = (int)((Math.log10(spectrum[j]) - minValue) * (255.0 / (maxValue - minValue)));
+					
+					if (Math.log10(spectrum[j]) - minValue < min) {
+						min = Math.log10(spectrum[j]) - minValue;
+						minJ = j;
+					}
+					
+					Color gray = new Color(grayscale, grayscale, grayscale);
+					ig2.setPaint(gray);
+			        ig2.setColor(gray);
+			        
+			        ig2.fillRect(i * pixelsProFrame, height - (j + 1) * pixelsProFrequency, pixelsProFrame, pixelsProFrequency);
+				}
+				
+				sumMinJ += minJ;
+				
+				int endX = i * pixelsProFrame;
+				int endY = height - (minJ + 1) * pixelsProFrequency;
+				ig2.setPaint(Color.red);	
+				ig2.drawLine(prevX, prevY, endX, endY);
+				
+				prevX = endX;
+				prevY = endY;
+			}
+		    
+		    sumMinJ /= spectrogramm.size();
+		    
+		    ig2.setPaint(Color.green);	
+			ig2.drawLine(0, height - (sumMinJ + 1) * pixelsProFrequency, width, height - (sumMinJ + 1) * pixelsProFrequency);
+			
+			int meanDeppValleyFq = (int)(sumMinJ * Clip.getClassSamplingRate() / (spectrogramm.get(0).length * 2));
+		    
+		    ImageIO.write(bi, "PNG", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\spectrogramms-full\\", filename + " (meanDeepValleyFq=" + meanDeppValleyFq + " Hz).png"));
+		}
+		catch(Exception ex) {
+			System.out.println("Bild nicht gespeichert");
+		    ex.printStackTrace();
+		}
+	}
+	
+	public void exportSpectrogrammClosedOpenDifference(String filename) {
+		try {
+			ArrayList<double[]> spectrogramm = analyzer.getSpectrogrammClosedOpenDifference();
+			
+			int pixelsProFrequency = 2, // Höhe
+			    pixelsProFrame = 20; // Breite
+			
+			/* Maximalen Wert finden */
+			double maxValue = Double.NEGATIVE_INFINITY, minValue = Double.POSITIVE_INFINITY;
+			
+			for (int i = 0; i < spectrogramm.size(); i++) {
+				double[] spectrum = spectrogramm.get(i);
+				for (int j = 0; j < spectrum.length; j++) {
+					maxValue = Math.max(maxValue, spectrum[j]);
+					minValue = Math.min(minValue, spectrum[j]);
+				}
+			}
+			
+			//Verschieben.
+			double oldMinValue = minValue;
+			
+			maxValue -= 2 * minValue;
+			minValue -= 2 * minValue;
+			
+			maxValue = Math.log10(maxValue);
+			minValue = Math.log10(minValue);	
+			
+			int width = pixelsProFrame * spectrogramm.size(),
+				height = pixelsProFrequency * spectrogramm.get(0).length;
+			
+			BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+			
+		    Graphics2D ig2 = bi.createGraphics();
+	
+	        ig2.setPaint(Color.white);
+	        ig2.setColor(Color.white);
+		    
+		    ig2.fillRect(0, 0, width, height);
+		    
+		    /* Für die Max-Linie */		    
+		    int prevX = -1, prevY = -1;
+		    
+		    int sumMaxJ = 0;
+		    
+		    for (int i = 0; i < spectrogramm.size(); i++) {
+				double[] spectrum = spectrogramm.get(i);
+				
+				double max = Double.NEGATIVE_INFINITY;
+				int maxJ = -1;
+				
+				for (int j = 0; j < spectrum.length; j++) {
+					int grayscale = (int)((Math.log10(spectrum[j] - 2 * oldMinValue) - minValue) * (255.0 / (maxValue - minValue)));	
+					if (Math.log10(spectrum[j] - 2 * oldMinValue) > max) {
+						max = Math.log10(spectrum[j] - 2 * oldMinValue);
+						maxJ = j;
+					}
+					
+					Color gray = new Color(grayscale, grayscale, grayscale);					
+			        ig2.setColor(gray);
+			        
+			        ig2.fillRect(i * pixelsProFrame, height - (j + 1) * pixelsProFrequency, pixelsProFrame, pixelsProFrequency);
+				}
+				
+				sumMaxJ += maxJ;
+				
+				int endX = i * pixelsProFrame;
+				int endY = height - (maxJ + 1) * pixelsProFrequency;
+				ig2.setPaint(Color.red);	
+				ig2.drawLine(prevX, prevY, endX, endY);
+				
+				prevX = endX;
+				prevY = endY;
+				
+			}
+		    
+		    sumMaxJ /= spectrogramm.size();
+		    
+		    ig2.setPaint(Color.green);	
+			ig2.drawLine(0, height - (sumMaxJ + 1) * pixelsProFrequency, width, height - (sumMaxJ + 1) * pixelsProFrequency);
+			
+			int meanPeakFq = (int)(sumMaxJ * Clip.getClassSamplingRate() / (spectrogramm.get(0).length * 2));
+		    
+		    ImageIO.write(bi, "PNG", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\spectrogramms-diff\\", filename + " (meanPeakFq=" + meanPeakFq + " Hz).png"));
+		}
+		catch(Exception ex) {
+			System.out.println("Bild nicht gespeichert");
+		    ex.printStackTrace();
+		}
+	}
 }

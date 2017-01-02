@@ -180,10 +180,10 @@ public class Frame {
 //        		 }
         		 
             	 //in dB umrechnen
-            	 //spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
+            	 spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
             	 snapshot1Spectrum[ffti] = spectralValue1;
             	   
-            	 //spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
+            	 spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
             	 snapshot2Spectrum[ffti] = spectralValue2;            	 
 
             }
@@ -214,6 +214,42 @@ public class Frame {
     
     public double[] getWholeFrameSpectrum() {
     	return wholeFrameSpectrum;
+    }
+    
+    public ArrayList<double[]> getDiffSpectrums(int percentage) {
+    	double p = percentage / 100;
+    	
+    	ArrayList<double[]> ret = new ArrayList<double[]>();
+    	
+    	int samplesAfterPeriodStart = (int)(p * samplesPerPeriod);
+        	
+    	for (int psp = 0; psp < periodStartingPoints.length; psp++) {
+    		if (periodStartingPoints[psp] == 1) {    	    			
+				double[] spectrum1 = spectrum1sByOffset.get(psp + samplesAfterPeriodStart),
+						 spectrum2 = spectrum2sByOffset.get(psp + samplesAfterPeriodStart);
+				
+				if (spectrum1 == null) {
+					break;
+				}
+				
+				ArrayList<Double> spectralDifferences = new ArrayList<Double>();
+				
+				/* Spektrale Differenz an einem Periodenanfangszeitpunkt berechnen */
+				for (int s = 0; s < spectrum1.length; s++) {		
+					spectralDifferences.add(spectrum1[s] - spectrum2[s]);
+				}
+				
+				double[] spectralDifferencesArray = new double[spectralDifferences.size()];
+				
+				for (int d = 0; d < spectralDifferences.size(); d++) {
+					spectralDifferencesArray[d] = spectralDifferences.get(d);
+				}
+				
+				ret.add(spectralDifferencesArray);			
+    		}
+    	}
+    	
+    	return ret;
     }
     
     public WindowFunction getWindowFuncWholeFrame() {

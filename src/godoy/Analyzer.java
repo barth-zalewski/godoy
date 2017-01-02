@@ -50,28 +50,50 @@ public class Analyzer {
 					spectralDifferences.set(sd, spectralDifferences.get(sd) - sdMean);
 				}
 				
+				/* spectralDifferences in ein Array umwandeln */
 				double[] spectralDifferencesArray = new double[spectralDifferences.size()];
 				for (int sd = 0; sd < spectralDifferences.size(); sd++) {
 					spectralDifferencesArray[sd] = spectralDifferences.get(sd);
 				}	
 				
-				//Existiert ein positiver Peak größer als X% des nächsten Wertes?
-				double maxPeak = Double.NEGATIVE_INFINITY, secondMaxPeak = maxPeak;
+				/* Lokale Maxima extrahieren */
+				//Lokales Maximum ist überall dort, wo die zwei benachbarten Werte kleiner sind.
 				
-				for (int sd = 0; sd < spectralDifferencesArray.length; sd++) {
-					if (maxPeak < spectralDifferencesArray[sd]) {
+				double[] isLocalMaximum = new double[spectralDifferencesArray.length]; //Wert des lokalen Maximums oder -Infnity falls keins
+				
+				for (int lm = 2; lm < spectralDifferencesArray.length - 3; lm++) {
+					double that = spectralDifferencesArray[lm],
+						   prev = spectralDifferencesArray[lm - 1],
+						   pprev = spectralDifferencesArray[lm - 2],
+						   next = spectralDifferencesArray[lm + 1],
+						   nnext = spectralDifferencesArray[lm + 2];
+					
+					if (that > prev && that > pprev && that > next && that > nnext) {
+						isLocalMaximum[lm] = that;
+					}
+					else {
+						isLocalMaximum[lm] = Double.NEGATIVE_INFINITY;
+					}
+				}
+								
+				double maxPeak = Double.NEGATIVE_INFINITY, 
+					   secondMaxPeak = Double.NEGATIVE_INFINITY;
+				
+				for (int sd = 0; sd < isLocalMaximum.length; sd++) {
+					if (maxPeak < isLocalMaximum[sd]) {
 						secondMaxPeak = maxPeak;
-						maxPeak = spectralDifferencesArray[sd];						
+						maxPeak = isLocalMaximum[sd];						
 					}
 				}							
 				
-				peaks[j] = secondMaxPeak / maxPeak < 0.6 ? 1 : 0;
+				peaks[j] = secondMaxPeak / maxPeak < 0.05 ? 1 : 0;
 			}
 			
 			peaksByFrame.add(peaks);
 		}			
 	}	
 	
+	/* DELTA ist vorgegeben, OFFSET wird verändert */
 	//Vor dieser Funktion muss "trackPeaks" aufgerufen werden
 	public void peaksPositionsHistogramm() {
 		histogramm = new int[100]; //Prozentuale Indizes bzgl. des Anfangs der Periode
@@ -113,5 +135,44 @@ public class Analyzer {
 	
 	public int[] getHistogramm() {
 		return histogramm;
+	}
+	
+	public ArrayList<double[]> getSpectrogrammFullFrames() {
+		ArrayList<double[]> spectrogramm = new ArrayList<double[]>();
+		
+		for (int i = 0; i < frames.size(); i++) {
+			double[] fullSpectrum = frames.get(i).getWholeFrameSpectrum();
+			double[] shortenedSpectrum = new double[fullSpectrum.length / 2];
+			for (int isp = 0; isp < shortenedSpectrum.length; isp++) { //Negative Frequenzen verwerfen
+				shortenedSpectrum[isp] = fullSpectrum[isp];
+			}
+			spectrogramm.add(shortenedSpectrum);
+		}
+		return spectrogramm;
+	}
+	
+	public ArrayList<double[]> getSpectrogrammClosedOpenDifference() {
+		ArrayList<double[]> spectrogramm = new ArrayList<double[]>();
+		int[] histogramm = getHistogramm();
+		
+		/* Suchen, bei welchem Offset es am meisten Peaks gibt */
+		int maxI = -1, maxPeak = -1;
+		
+		for (int i = 0; i < histogramm.length; i++) {					
+			if (histogramm[i] > maxPeak) {
+				maxPeak = histogramm[i];
+				maxI = i;
+			}
+		}
+
+		for (int i = 0; i < frames.size(); i++) {
+			ArrayList<double[]> diffSpectrums = frames.get(i).getDiffSpectrums(10);
+			
+			for (int s = 0; s < diffSpectrums.size(); s++) {
+				spectrogramm.add(diffSpectrums.get(s));
+			}
+			
+		}
+		return spectrogramm;
 	}
 }

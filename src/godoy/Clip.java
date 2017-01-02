@@ -53,7 +53,7 @@ public class Clip {
         byte[] buf = new byte[CHUNK_SIZE_10_MS * 2]; // 16-bit Monosamples
         int n;
         
-        double timeCounter =  pitchAnalyzer.initialTime();
+        double timeCounter = pitchAnalyzer.initialTime();
         
         ArrayList<double[]> chunks = new ArrayList<double[]>();
         
@@ -146,15 +146,7 @@ public class Clip {
             return -1;
         }
     }
-
-    public int getFrameTimeSamples() {
-        return frameSize;
-    }
-
-    public int getFrameFreqSamples() {
-        return frameSize;
-    }
-
+	
     public int getFrameCount() {
         return frames.size();
     }
@@ -185,8 +177,8 @@ public class Clip {
     	//return createCharacteristicsVectorGodoyBased();
     	//return createCharacteristicsVectorFunctionValueBased();
     	//return createCharacteristicsVectorDCTBased();
-    	return createCharacteristicsVectorMFCCBased();    	
-    	//return createCharacteristicsVectorCombined();
+    	//return createCharacteristicsVectorMFCCBased();    	
+    	return createCharacteristicsVectorCombined();
     }
     
     private ArrayList<double[]> createCharacteristicsVectorFunctionValueBased() {
