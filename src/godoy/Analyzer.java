@@ -177,6 +177,92 @@ public class Analyzer {
 		return spectrogramm;
 	}
 	
+	public int[] getHistogrammPeaksByFrequency() {
+		
+		int[] histogramm = null; //Halbe FFT-Länge
+		
+		for (int i = 0; i < frames.size(); i++) {
+			Map<Integer, double[]> spectrums1 = frames.get(i).getSpectrums1(),
+								   spectrums2 = frames.get(i).getSpectrums2();
+			
+			for (int j = 0; j < spectrums1.size(); j++) {
+				double[] spectrum1 = spectrums1.get(j),
+						 spectrum2 = spectrums2.get(j);
+				
+				ArrayList<Double> spectralDifferences = new ArrayList<Double>();
+				
+				for (int s = 0; s < spectrum1.length; s++) {		
+					double frequency = (double)s * 0.5 * Clip.getClassSamplingRate() / spectrum1.length;
+					if (frequency > minFrequency && frequency < maxFrequency) {
+						spectralDifferences.add(spectrum1[s] - spectrum2[s]);
+					}
+					//else {
+					//	spectralDifferences.add(0.0);
+					//}
+				}
+				
+				if (histogramm == null) {
+					histogramm = new int[spectralDifferences.size()];
+				}
+				
+				/* Differenzen mittelwertfrei machen */
+				double sdMean = 0;
+				for (int sd = 0; sd < spectralDifferences.size(); sd++) {
+					sdMean += spectralDifferences.get(sd);
+				}
+				sdMean /= spectralDifferences.size();
+				for (int sd = 0; sd < spectralDifferences.size(); sd++) {
+					spectralDifferences.set(sd, spectralDifferences.get(sd) - sdMean);
+				}
+				
+				/* spectralDifferences in ein Array umwandeln */
+				double[] spectralDifferencesArray = new double[spectralDifferences.size()];
+				for (int sd = 0; sd < spectralDifferences.size(); sd++) {
+					spectralDifferencesArray[sd] = spectralDifferences.get(sd);
+				}	
+				
+				/* Lokale Maxima extrahieren */
+				//Lokales Maximum ist überall dort, wo die zwei benachbarten Werte kleiner sind.
+				
+				double[] isLocalMaximum = new double[spectralDifferencesArray.length]; //Wert des lokalen Maximums oder -Infnity falls keins
+				
+				for (int lm = 2; lm < spectralDifferencesArray.length - 3; lm++) {
+					double that = spectralDifferencesArray[lm],
+						   prev = spectralDifferencesArray[lm - 1],
+						   pprev = spectralDifferencesArray[lm - 2],
+						   next = spectralDifferencesArray[lm + 1],
+						   nnext = spectralDifferencesArray[lm + 2];
+					
+					if (that > prev && that > pprev && that > next && that > nnext) {
+						isLocalMaximum[lm] = that;
+					}
+					else {
+						isLocalMaximum[lm] = 0;
+					}
+				}
+								
+				double maxPeak = 0, 
+					   secondMaxPeak = 0;
+				
+				int indexOfPeak = -1;
+				
+				for (int sd = 0; sd < isLocalMaximum.length; sd++) {					
+					if (maxPeak < isLocalMaximum[sd]) {
+						secondMaxPeak = maxPeak;
+						maxPeak = isLocalMaximum[sd];
+						indexOfPeak = sd;
+					}
+				}		
+				
+				if (secondMaxPeak / maxPeak < 0.05 && indexOfPeak != -1) {
+					histogramm[indexOfPeak]++;
+				}
+			}
+		}
+		
+		return histogramm;
+	}
+	
 	public double getDeepValleyFrequency() {
 		ArrayList<double[]> spectrogramm = getSpectrogrammFullFrames();
 		

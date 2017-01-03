@@ -291,8 +291,7 @@ public class Clip {
 //    }    
 
     private ArrayList<double[]>createCharacteristicsVectorCombined() {
-    	double deepValleyFrequency = analyzer.getDeepValleyFrequency();
-    	System.out.println("dvf=" + deepValleyFrequency);
+    	double deepValleyFrequency = analyzer.getDeepValleyFrequency();    	
     	
 		for (int i = 0; i < frames.size(); i++) {
     		ArrayList<double[]> mfccCoefficientsAL = frames.get(i).getMFCCCoeffiencts();

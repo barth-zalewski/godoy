@@ -180,10 +180,10 @@ public class Frame {
 //        		 }
         		 
             	 //in dB umrechnen
-            	 spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
+            	 //spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
             	 snapshot1Spectrum[ffti] = spectralValue1;
             	   
-            	 spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
+            	 //spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
             	 snapshot2Spectrum[ffti] = spectralValue2;            	 
 
             }

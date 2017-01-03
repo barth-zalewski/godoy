@@ -892,4 +892,48 @@ public class Exporter {
 		    ex.printStackTrace();
 		}
 	}
+	
+	public void exportHistogrammPeaksByFrequency(String filename) {
+		try {
+			int[] histogramm = analyzer.getHistogrammPeaksByFrequency();
+			String hs = "";
+			
+			int width = 2 * histogramm.length,
+				height = 20;
+				
+			BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+			
+		    Graphics2D ig2 = bi.createGraphics();
+	
+	        ig2.setPaint(Color.white);
+	        ig2.setColor(Color.white);
+		    
+		    ig2.fillRect(0, 0, width, height);
+		    
+		    int maxValue = -1;
+		    
+		    for (int h = 0; h < histogramm.length; h++) {
+		    	hs += histogramm[h] + " / ";
+		    	if (histogramm[h]  > maxValue) {
+		    		maxValue = histogramm[h];
+		    	}
+		    }
+		    //System.out.println("hs=" + hs);
+		    
+		    for (int h = 0; h < histogramm.length; h++) {
+		    	int grayscale = 255 - (int)(255.0 * (double)histogramm[h] / maxValue);	
+				
+				Color gray = new Color(grayscale, grayscale, grayscale);					
+		        ig2.setColor(gray);
+		        
+		        ig2.fillRect(h * 2, 0, 2, 20);			
+		    }
+		    
+		    ImageIO.write(bi, "PNG", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\histogramms-peaks-by-frequency\\", filename + ".png"));
+		}
+		catch(Exception ex) {
+			System.out.println("Bild nicht gespeichert");
+		    ex.printStackTrace();
+		}
+	}
 }
