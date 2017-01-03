@@ -1,5 +1,6 @@
 package godoy;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -166,7 +167,7 @@ public class Analyzer {
 		}
 
 		for (int i = 0; i < frames.size(); i++) {
-			ArrayList<double[]> diffSpectrums = frames.get(i).getDiffSpectrums(10);
+			ArrayList<double[]> diffSpectrums = frames.get(i).getDiffSpectrums(maxI);
 			
 			for (int s = 0; s < diffSpectrums.size(); s++) {
 				spectrogramm.add(diffSpectrums.get(s));
@@ -174,5 +175,45 @@ public class Analyzer {
 			
 		}
 		return spectrogramm;
+	}
+	
+	public double getDeepValleyFrequency() {
+		ArrayList<double[]> spectrogramm = getSpectrogrammFullFrames();
+		
+		/* Maximalen Wert finden */
+		double maxValue = Double.NEGATIVE_INFINITY, minValue = Double.POSITIVE_INFINITY;
+		
+		for (int i = 0; i < spectrogramm.size(); i++) {
+			double[] spectrum = spectrogramm.get(i);
+			for (int j = 0; j < spectrum.length; j++) {
+				maxValue = Math.max(maxValue, spectrum[j]);
+				minValue = Math.min(minValue, spectrum[j]);
+			}
+		}
+		
+		maxValue = Math.log10(maxValue);
+		minValue = Math.log10(minValue);			
+		
+		int sumMinJ = 0;
+		
+		for (int i = 0; i < spectrogramm.size(); i++) {
+			double[] spectrum = spectrogramm.get(i);
+
+			double min = Double.POSITIVE_INFINITY;
+			int minJ = -1;
+			
+			for (int j = 0; j < spectrum.length; j++) {				
+				if (Math.log10(spectrum[j]) - minValue < min) {
+					min = Math.log10(spectrum[j]) - minValue;
+					minJ = j;
+				}				
+			}
+			
+			sumMinJ += minJ;			
+		}
+	    
+	    sumMinJ /= spectrogramm.size();
+	    
+	    return sumMinJ * Clip.getClassSamplingRate() / (spectrogramm.get(0).length * 2);
 	}
 }

@@ -264,30 +264,50 @@ public class Clip {
     	
     	return characteristicsVectorSeries;
     }    
-    
-    private ArrayList<double[]>createCharacteristicsVectorCombined() {
-    	ArrayList<double[]> all = new ArrayList<double[]>();
-    	
-    	int[] histogramm = analyzer.getHistogramm();
-		
-		int maxI = -1, maxPeak = -1;
-		
-		for (int i = 0; i < histogramm.length; i++) {					
-			if (histogramm[i] > maxPeak) {
-				maxPeak = histogramm[i];
-				maxI = i;
-			}
-		}
-		
-    	for (int i = 0; i < frames.size(); i++) {
-    		ArrayList<double[]> combinedCoeeficients = frames.get(i).getCombinedCoefficients(maxI);
-    		
-    		for (int j = 0; j < combinedCoeeficients.size(); j++) {    			
-    			characteristicsVectorSeries.add(combinedCoeeficients.get(j));    			
-    		}    	    		
-    	}
-    	
-    	return characteristicsVectorSeries;
-    }    
+//    
+//    private ArrayList<double[]>createCharacteristicsVectorCombined() {
+//    	ArrayList<double[]> all = new ArrayList<double[]>();
+//    	
+//    	int[] histogramm = analyzer.getHistogramm();
+//		
+//		int maxI = -1, maxPeak = -1;
+//		
+//		for (int i = 0; i < histogramm.length; i++) {					
+//			if (histogramm[i] > maxPeak) {
+//				maxPeak = histogramm[i];
+//				maxI = i;
+//			}
+//		}
+//		
+//    	for (int i = 0; i < frames.size(); i++) {
+//    		ArrayList<double[]> combinedCoeeficients = frames.get(i).getCombinedCoefficients(maxI);
+//    		
+//    		for (int j = 0; j < combinedCoeeficients.size(); j++) {    			
+//    			characteristicsVectorSeries.add(combinedCoeeficients.get(j));    			
+//    		}    	    		
+//    	}
+//    	
+//    	return characteristicsVectorSeries;
+//    }    
 
+    private ArrayList<double[]>createCharacteristicsVectorCombined() {
+    	double deepValleyFrequency = analyzer.getDeepValleyFrequency();
+    	System.out.println("dvf=" + deepValleyFrequency);
+    	
+		for (int i = 0; i < frames.size(); i++) {
+    		ArrayList<double[]> mfccCoefficientsAL = frames.get(i).getMFCCCoeffiencts();
+    		
+    		/* Nur ein pro Frame */
+    		double[] mfccCoefficients = mfccCoefficientsAL.get(0);
+    		double[] combinedCoefficients = new double[mfccCoefficients.length + 1];
+    		
+    		for (int cc = 0; cc < mfccCoefficients.length; cc++) {
+    			combinedCoefficients[cc] = mfccCoefficients[cc];
+    		}
+    		combinedCoefficients[mfccCoefficients.length] = deepValleyFrequency;
+    		
+    		characteristicsVectorSeries.add(combinedCoefficients);   	    		
+    	}
+    	return characteristicsVectorSeries;
+    }
 }

@@ -791,6 +791,10 @@ public class Exporter {
 	}
 	
 	public void exportSpectrogrammClosedOpenDifference(String filename) {
+		exportSpectrogrammClosedOpenDifference(filename, false);
+	}
+	
+	public void exportSpectrogrammClosedOpenDifference(String filename, boolean onlyRelevantFrequencies) {
 		try {
 			ArrayList<double[]> spectrogramm = analyzer.getSpectrogrammClosedOpenDifference();
 			
@@ -841,6 +845,15 @@ public class Exporter {
 				int maxJ = -1;
 				
 				for (int j = 0; j < spectrum.length; j++) {
+
+					if (onlyRelevantFrequencies) {
+						double fq = (j * Clip.getClassSamplingRate() / (spectrogramm.get(0).length * 2));
+						if (fq < godoy.MINIMAL_RELEVANT_FREQUENCY || fq > godoy.MAXIMAL_RELEVANT_FREQUENCY) {
+							continue;
+						}
+					}
+					
+					
 					int grayscale = (int)((Math.log10(spectrum[j] - 2 * oldMinValue) - minValue) * (255.0 / (maxValue - minValue)));	
 					if (Math.log10(spectrum[j] - 2 * oldMinValue) > max) {
 						max = Math.log10(spectrum[j] - 2 * oldMinValue);
