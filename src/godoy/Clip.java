@@ -208,9 +208,10 @@ public class Clip {
     private ArrayList<double[]> createCharacteristicsVectorGodoyBased() {
     	ArrayList<double[]> all = new ArrayList<double[]>();
     	
-    	int[] histogramm = analyzer.getHistogramm();
+    	double[] histogramm = analyzer.getHistogramm();
 		
-		int maxI = -1, maxPeak = -1;
+		int maxI = -1; 
+		double maxPeak = -1;
 		
 		for (int i = 0; i < histogramm.length; i++) {					
 			if (histogramm[i] > maxPeak) {

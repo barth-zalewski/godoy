@@ -10,7 +10,7 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 
 public class GlobalExporter {
-	public static void exportHistogramm2D(LinkedHashMap<Double, int[]> histogramm2D) {		
+	public static void exportHistogramm2D(LinkedHashMap<Double, double[]> histogramm2D) {		
 		try {			
 			int size = 800;
 			
@@ -28,16 +28,16 @@ public class GlobalExporter {
 		    
 		    double maxHistogrammValue = Double.NEGATIVE_INFINITY;
 		    
-		    for (Map.Entry<Double, int[]> entry : histogramm2D.entrySet()) {						
-				int[] histogramm = entry.getValue();				
+		    for (Map.Entry<Double, double[]> entry : histogramm2D.entrySet()) {						
+		    	double[] histogramm = entry.getValue();				
 				for (int i = 0; i < histogramm.length; i++) {
 					maxHistogrammValue = Math.max(maxHistogrammValue, histogramm[i]);
 				}
 			}
 		    
 		    int offsetCounter = 0;
-		    for (Map.Entry<Double, int[]> entry : histogramm2D.entrySet()) {				
-				int[] histogramm = entry.getValue();				
+		    for (Map.Entry<Double, double[]> entry : histogramm2D.entrySet()) {				
+		    	double[] histogramm = entry.getValue();				
 				for (int i = 0; i < histogramm.length; i++) {
 					int grayscale = 255 - (int)((histogramm[i] / maxHistogrammValue) * 255);
 					Color gray = new Color(grayscale, grayscale, grayscale);

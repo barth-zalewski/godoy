@@ -658,7 +658,7 @@ public class Exporter {
 	
 	public void exportPeaksPositionHistogramm() {
 		try {
-			int[] histogramm = analyzer.getHistogramm();
+			double[] histogramm = analyzer.getHistogramm();
 			
 			int size = 400;
 			

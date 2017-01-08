@@ -33,21 +33,23 @@ public class godoy {
 			File pitchListingFile = new File(fileStub + ".pitch");
 			System.out.println("Verarbeite Datei " + fileStub);
 			try {	
-				//for (double sp = 0.25; sp <= 0.85; sp += 0.05) {
+				for (double sp = 0.25; sp <= 0.85; sp += 0.05) {
 					//Wegen der Präzisionfehler...
-		            //sp = Math.round(sp * 1000.0) / 1000.0;
+		            sp = Math.round(sp * 1000.0) / 1000.0;
 		            
-					Clip clip = Clip.newInstance(wavFile, pitchListingFile, godoy.T_ANALYSIS_DELTA);
+					Clip clip = Clip.newInstance(wavFile, pitchListingFile, sp);
 					//ArrayList<double[]> spectrogramm = clip.getAnalyzer().getSpectrogrammFullFrames();
 					String[] partsOfFilename = fileStub.split("\\\\");
 					
 					//clip.getExporter().exportSpectrogrammFullFrames(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());
 					//clip.getExporter().exportSpectrogrammClosedOpenDifference(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());
-					clip.getExporter().exportHistogrammPeaksByFrequency(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());
+					//clip.getExporter().exportHistogrammPeaksByFrequency(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());					
 //					clip.getAnalyzer().trackPeaks();
 //					clip.getAnalyzer().peaksPositionsHistogramm();
-					//GlobalAnalyzer.addHistogrammRow(clip.getAnalyzer().getHistogramm(), sp);										
-				//}
+					clip.getAnalyzer().trackStDevs();
+					clip.getAnalyzer().stDevHistogramm();								
+					GlobalAnalyzer.addHistogrammRow(clip.getAnalyzer().getHistogramm(), sp);
+				}
 			}
 			catch (Exception ex) {
 				System.out.println("Die Verarbeitung der Audio-Datei " + fileStub + " ist fehlgeschlagen.");
@@ -56,8 +58,8 @@ public class godoy {
 		}
 		
 		/* Peak-Histogramm erzeugen */
-//		LinkedHashMap<Double, int[]> histogramm2D = GlobalAnalyzer.getHistogramm2D();
-//		GlobalExporter.exportHistogramm2D(histogramm2D);
+		LinkedHashMap<Double, double[]> histogramm2D = GlobalAnalyzer.getHistogramm2D();
+		GlobalExporter.exportHistogramm2D(histogramm2D);
 		
 		/** TRAINING / ERKENNUNG **/
 		

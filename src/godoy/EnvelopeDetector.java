@@ -10,7 +10,8 @@ public class EnvelopeDetector {
 	
 	/* In-Place-Transformation */
 	public void getEnvelope(double[] samples) {
-		localMaximumBasedEnvelopeDetector(samples);
+		//localMaximumBasedEnvelopeDetector(samples);
+		analyticSignalViaHilbert(samples);
 	}
 	
 	/* Zurzeit benutze Methode - eine effektive Berechnung, indem lokale Maxima gefunden werden */

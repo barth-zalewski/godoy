@@ -5,12 +5,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import sun.rmi.server.Util;
+
 /* Analyzer für einzelne Clips */
 public class Analyzer {
 	
 	private List<Frame> frames;
+	
 	private ArrayList<double[]> peaksByFrame;
-	int[] histogramm;
+	private ArrayList<double[]> stDevsByFrame;
+	
+	double[] histogramm;	
 	
 	private int minFrequency = godoy.MINIMAL_RELEVANT_FREQUENCY,
 				maxFrequency = godoy.MAXIMAL_RELEVANT_FREQUENCY;
@@ -97,7 +102,7 @@ public class Analyzer {
 	/* DELTA ist vorgegeben, OFFSET wird verändert */
 	//Vor dieser Funktion muss "trackPeaks" aufgerufen werden
 	public void peaksPositionsHistogramm() {
-		histogramm = new int[100]; //Prozentuale Indizes bzgl. des Anfangs der Periode
+		histogramm = new double[100]; //Prozentuale Indizes bzgl. des Anfangs der Periode
 		
 		for (int i = 0; i < frames.size(); i++) {
 			double[] peaks = peaksByFrame.get(i);			
@@ -130,11 +135,100 @@ public class Analyzer {
 		}
 	}
 	
+	public void trackStDevs() {		
+		stDevsByFrame = new ArrayList<double[]>();
+		
+		for (int i = 0; i < frames.size(); i++) {
+			Map<Integer, double[]> spectrums1 = frames.get(i).getSpectrums1();
+			Map<Integer, double[]> spectrums2 = frames.get(i).getSpectrums2();
+			
+			double[] stDevs = new double[spectrums1.size()];
+			
+			//Jedes Frame hat viele Spektren
+			for (int j = 0; j < spectrums1.size(); j++) {
+				double[] spectrum1 = spectrums1.get(j),
+						 spectrum2 = spectrums2.get(j);
+				
+				ArrayList<Double> spectralDifferences = new ArrayList<Double>();
+				
+				for (int s = 0; s < spectrum1.length; s++) {		
+					double frequency = (double)s * 0.5 * Clip.getClassSamplingRate() / spectrum1.length;
+					if (frequency > godoy.MINIMAL_RELEVANT_FREQUENCY && frequency < godoy.MAXIMAL_RELEVANT_FREQUENCY) {
+						spectralDifferences.add(spectrum1[s] - spectrum2[s]);
+					}
+				}
+				
+				/* Differenzen mittelwertfrei machen */
+				double sdMean = 0;
+				for (int sd = 0; sd < spectralDifferences.size(); sd++) {
+					sdMean += spectralDifferences.get(sd);
+				}
+				sdMean /= spectralDifferences.size();
+				for (int sd = 0; sd < spectralDifferences.size(); sd++) {
+					spectralDifferences.set(sd, spectralDifferences.get(sd) - sdMean);
+				}
+				
+				/* spectralDifferences in ein Array umwandeln */
+				double[] spectralDifferencesArray = new double[spectralDifferences.size()];
+				for (int sd = 0; sd < spectralDifferences.size(); sd++) {
+					spectralDifferencesArray[sd] = spectralDifferences.get(sd);
+				}
+				
+				double stDev = Utils.standardDeviation(spectralDifferencesArray);
+				
+				stDevs[j] = stDev;
+			}
+			
+			stDevsByFrame.add(stDevs);
+		}
+	}
+	
+	//Vor dieser Funktion muss "trackStDevs" aufgerufen werden
+	public void stDevHistogramm() {
+		histogramm = new double[100]; //Prozentuale Indizes bzgl. des Anfangs der Periode
+		int[] sums = new int[histogramm.length];
+		
+		for (int i = 0; i < frames.size(); i++) {
+			double[] stDevs = stDevsByFrame.get(i);			
+			int[] periodStartingPoints = frames.get(i).getPeriodStartingPoints(); //Dieses Array hat die Länge == Frame-Gesamtlänge
+			int halfLengthOffset = (int)((periodStartingPoints.length - stDevs.length) / 2);
+			
+			//Peaks-Länge mit allSamples angleichen
+			double[] stDevsFilled = new double[periodStartingPoints.length];
+			
+			for (int p = 0; p < stDevs.length; p++) {
+				stDevsFilled[p + halfLengthOffset] = stDevs[p];
+			}
+			
+			int samplesPerPeriod = (int)((1 / frames.get(i).getPitch()) * Clip.getClassSamplingRate());
+			
+			//Histogramm erzeugen
+			int lastSamplePositionBeingPeriodStart = 0;
+			
+			for (int p = 0; p < stDevsFilled.length; p++) {
+				if (periodStartingPoints[p] == 1) {
+					lastSamplePositionBeingPeriodStart = p;
+				}
+				int percentage = (int)(100 * (p - lastSamplePositionBeingPeriodStart) / samplesPerPeriod);
+				if (percentage < 100) {
+					histogramm[percentage] += stDevsFilled[p];
+					sums[percentage]++;
+				}
+			}		
+		}
+		
+		for (int hi = 0; hi < histogramm.length; hi++) {
+			histogramm[hi] /= sums[hi] > 0 ? 
+							  sums[hi] :
+						      1;
+		}
+	}
+	
 	public ArrayList<double[]> getPeaksByFrame() {
 		return peaksByFrame;
 	}
 	
-	public int[] getHistogramm() {
+	public double[] getHistogramm() {
 		return histogramm;
 	}
 	
@@ -154,10 +248,11 @@ public class Analyzer {
 	
 	public ArrayList<double[]> getSpectrogrammClosedOpenDifference() {
 		ArrayList<double[]> spectrogramm = new ArrayList<double[]>();
-		int[] histogramm = getHistogramm();
+		double[] histogramm = getHistogramm();
 		
 		/* Suchen, bei welchem Offset es am meisten Peaks gibt */
-		int maxI = -1, maxPeak = -1;
+		int maxI = -1;
+		double maxPeak = -1;
 		
 		for (int i = 0; i < histogramm.length; i++) {					
 			if (histogramm[i] > maxPeak) {
