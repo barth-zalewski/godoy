@@ -177,8 +177,10 @@ public class Clip {
     	//return createCharacteristicsVectorGodoyBased();
     	//return createCharacteristicsVectorFunctionValueBased();
     	//return createCharacteristicsVectorDCTBased();
+    	return createCharacteristicsVectorCombinedMFCC_DCT();
+    	//return createCharacteristicsVectorDCTBasedWithCepstrum();
     	//return createCharacteristicsVectorMFCCBased();    	
-    	return createCharacteristicsVectorCombined();
+    	//return createCharacteristicsVectorCombined();
     }
     
     private ArrayList<double[]> createCharacteristicsVectorFunctionValueBased() {
@@ -205,53 +207,64 @@ public class Clip {
     	return characteristicsVectorSeries;
     }
     
-    private ArrayList<double[]> createCharacteristicsVectorGodoyBased() {
-    	ArrayList<double[]> all = new ArrayList<double[]>();
-    	
-    	double[] histogramm = analyzer.getHistogramm();
-		
-		int maxI = -1; 
-		double maxPeak = -1;
-		
-		for (int i = 0; i < histogramm.length; i++) {					
-			if (histogramm[i] > maxPeak) {
-				maxPeak = histogramm[i];
-				maxI = i;
-			}
-		}
-		
-		for (int i = 0; i < frames.size(); i++) {
-			ArrayList<double[]> peaksCoordinates = frames.get(i).getPeaksCoordinates(maxI);   	
-			
-			for (int j = 0; j < peaksCoordinates.size(); j++) {
-				all.add(peaksCoordinates.get(j));    			
-    		}
+    private ArrayList<double[]> createCharacteristicsVectorCombinedMFCC_DCT() {
+    	for (int i = 0; i < frames.size(); i++) {
+    		ArrayList<double[]> dctCoeeficients = frames.get(i).getDCTCoeffiencts();
+    		ArrayList<double[]> mfccCoeeficients = frames.get(i).getMFCCCoeffiencts();
+    		
+    		//Es gibt eine unterschiedliche Anzahl DCT-Vektoren und nur einen MFCC_Vektor; und diese haben unterschiedliche Längen    		
+    		
+    		for (int j = 0; j < dctCoeeficients.size(); j++) {
+    			double[] dctVector = dctCoeeficients.get(j),
+    					 mfccVector = mfccCoeeficients.get(0);
+    			double[] combinedVector = new double[dctVector.length + mfccVector.length];
+    			
+    			for (int k = 0; k < mfccVector.length; k++) {
+    				combinedVector[k] = mfccVector[k];
+    			}
+    			for (int k = 0; k < dctVector.length; k++) {
+    				combinedVector[k + mfccVector.length] = dctVector[k];
+    			}
+    			
+    			characteristicsVectorSeries.add(combinedVector);    			
+    		}    	    		
     	}
-//		
-//		double[] sums = new double[all.get(0).length];
-//		
-//		int chunksSize = 3;
-//		
-//		for (int i = 0; i < all.size(); i++) {
-//			double[] thisOne = all.get(i);
-//			
-//			if (i % chunksSize == 0 && i != 0) {
-//				double[] chunked = new double[thisOne.length];
-//				for (int j = 0; j < sums.length; j++) {
-//					chunked[j] = sums[j] / chunksSize;
-//					sums[j] = 0;
-//				}		
-//				
-//				characteristicsVectorSeries.add(chunked);
-//			}
-//			
-//			
-//			for (int j = 0; j < thisOne.length; j++) {
-//				sums[j] += thisOne[j];
-//			}
-//		}		
-		
-    	return all;
+    	
+    	return characteristicsVectorSeries;
+    }
+    
+    private ArrayList<double[]> createCharacteristicsVectorDCTBasedWithCepstrum() {
+    	for (int i = 0; i < frames.size(); i++) {
+    		ArrayList<double[]> dctCoeeficients = frames.get(i).getDCTCoeffienctsWithCepstrum();
+    		
+    		for (int j = 0; j < dctCoeeficients.size(); j++) {
+    			characteristicsVectorSeries.add(dctCoeeficients.get(j));    			
+    		}    	    		
+    	}
+    	
+    	return characteristicsVectorSeries;
+    }
+    
+    private ArrayList<double[]> createCharacteristicsVectorGodoyBased() {
+    	double deepValleyFrequency = analyzer.getDeepValleyFrequency(),  
+     		   cyclicPeakFrequency = analyzer.getCyclicPeakFrequency();  
+     	
+ 		for (int i = 0; i < frames.size(); i++) {     		
+     		double pitch = frames.get(i).getPitch();
+     		
+     		/* Nur ein pro Frame */
+     		double[] combinedCoefficients = new double[3];
+     		
+ 			combinedCoefficients[0] = deepValleyFrequency;     			
+ 		
+ 			combinedCoefficients[1] = cyclicPeakFrequency;
+ 			
+ 			combinedCoefficients[2] = pitch;     			     		
+     		
+     		characteristicsVectorSeries.add(combinedCoefficients);   	    		
+     	}
+ 		
+     	return characteristicsVectorSeries;
     }
     
     private ArrayList<double[]> createCharacteristicsVectorMFCCBased() {
@@ -299,7 +312,7 @@ public class Clip {
     	
     	/* Local configurations */
     	final boolean CONSIDER_DEEP_VALLEY_FQ = true,
-    				  CONSIDER_CYCLIC_PEAK_FQ = false,
+    				  CONSIDER_CYCLIC_PEAK_FQ = true,
     				  CONSIDER_PITCH = false;
     	
     	int moreOfIndex = 0;

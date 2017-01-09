@@ -339,7 +339,7 @@ public class Frame {
 					spectralDifferencesArray[d] = spectralDifferences.get(d);
 				}
 				
-				double[] sdaDCT = spectralDifferencesArray.clone();
+				double[] sdaDCT = spectralDifferencesArray.clone();				
 
 				DoubleDCT_1D dct = new DoubleDCT_1D(sdaDCT.length);
 				
@@ -352,6 +352,82 @@ public class Frame {
 				}
 				
 				ret.add(sdaDCTShortened);			
+    		}
+    	}
+    	
+    	return ret;
+    }
+    
+    public ArrayList<double[]> getDCTCoeffienctsWithCepstrum() {
+    	ArrayList<double[]> ret = new ArrayList<double[]>();
+    	
+    	int samplesAfterPeriodStart = (int)(samplesPerPeriod * godoy.T_ANALYSIS_OFFSET);    	
+    	for (int psp = 0; psp < periodStartingPoints.length; psp++) {
+    		if (periodStartingPoints[psp] == 1) {    		    	
+				double[] spectrum1 = spectrum1sByOffset.get(psp + samplesAfterPeriodStart),
+						 spectrum2 = spectrum2sByOffset.get(psp + samplesAfterPeriodStart);
+				
+				if (spectrum1 == null) {
+					break;
+				}
+				
+				ArrayList<Double> spectralDifferences = new ArrayList<Double>();
+				
+				/* Spektrale Differenz an einem Periodenanfangszeitpunkt berechnen */
+				for (int s = 0; s < spectrum1.length; s++) {		
+					double frequency = (double)s * 0.5 * Clip.getClassSamplingRate() / spectrum1.length;
+					//if (frequency > godoy.MINIMAL_RELEVANT_FREQUENCY && frequency < godoy.MAXIMAL_RELEVANT_FREQUENCY) {
+						spectralDifferences.add(spectrum1[s] - spectrum2[s]);
+					//}
+				}
+				
+				double[] spectralDifferencesArray = new double[spectralDifferences.size()];
+				
+				for (int d = 0; d < spectralDifferences.size(); d++) {
+					spectralDifferencesArray[d] = spectralDifferences.get(d);
+				}
+				
+				double[] sdaFFT = new double[spectralDifferencesArray.length * 2];
+				
+				for (int sf = 0; sf < spectralDifferencesArray.length; sf++) {
+					sdaFFT[sf * 2] = spectralDifferencesArray[sf];
+				}
+				
+				DoubleFFT_1D fft = new DoubleFFT_1D(spectralDifferencesArray.length);
+				
+				fft.complexForward(sdaFFT);
+				
+				double[] spectrum = new double[spectralDifferencesArray.length];
+				
+				for (int sf = 0; sf < spectralDifferencesArray.length; sf++) {
+					spectrum[sf] = Math.sqrt(Math.pow(sdaFFT[sf * 2], 2) + Math.pow(sdaFFT[sf * 2 + 1], 2));
+				}
+				
+				//Periodogramm estimate
+				for (int sf = 0; sf < spectralDifferencesArray.length; sf++) {
+					spectrum[sf] = (1.0 / spectrum.length) * Math.pow(spectrum[sf], 2);
+				}
+				
+				MelFilterbank melFilterbank = new MelFilterbank(spectrum); /* Rein: Periodogramm der Länge = FFT-Länge */
+		    	double[] melTransformedData = melFilterbank.transform(); /* Raus: Spektrum bearbeitet mit der Mel-Filterbank der Länge <Anzahl Filterbanken> */
+//				
+		    	/* Schritt 4: Logarithmierung */
+		    	for (int m = 0; m < melTransformedData.length; m++) {
+		    		melTransformedData[m] = Math.log10(melTransformedData[m]);
+		    	}    	
+		    	
+		    	/* Schritt 5: DCT (Cepstrum) */
+		    	DoubleDCT_1D dct = new DoubleDCT_1D(melTransformedData.length);
+		    	
+		    	dct.forward(melTransformedData, true);
+		    	
+		    	double[] finalMFCC = new double[KEEP_MFFC_COEFFICIENTS];    
+		    	
+		    	for (int i = 0; i < finalMFCC.length; i++) {
+		    		finalMFCC[i] = melTransformedData[i + 1]; //removing the zeroth coefficient to mitigate effects of energy differences between frames
+		    	}    	
+				
+				ret.add(finalMFCC);			
     		}
     	}
     	

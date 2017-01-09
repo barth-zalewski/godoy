@@ -16,7 +16,7 @@ public class godoy {
 	public static int MINIMAL_RELEVANT_FREQUENCY = 3000;
 	public static int MAXIMAL_RELEVANT_FREQUENCY = 6000;
 	
-	public static int NUMBER_FIRST_DCT_COEFFICIENTS_FOR_CHARACTERISTICS_VECTOR = 3;
+	public static int NUMBER_FIRST_DCT_COEFFICIENTS_FOR_CHARACTERISTICS_VECTOR = 80;
 	public static boolean USE_PITCH_FOR_CHARACTERISTICS = false;
 	
 	public static void main(String[] arguments) {	
@@ -63,7 +63,7 @@ public class godoy {
 		
 		/** TRAINING / ERKENNUNG **/
 		
-		CorpusExtractor.onlyMales();
+		CorpusExtractor.onlyFemales();
 		
 		/* Initialisiert alle Sprecher mit den zugehörigen Merkmalvektorfolgen */
 		ArrayList<Speaker> corpusForTraining = CorpusExtractor.getCorpusForApplicationTraining("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");		
