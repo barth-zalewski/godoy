@@ -23,6 +23,7 @@ public class Speaker {
 	}
 	
 	public void initializeClips() {
+		System.out.println(directoryName);
 		try {
 			for (String fileStub : clipsFilenameStubs) {
 				File wavFile = new File(fileStub + ".wav");

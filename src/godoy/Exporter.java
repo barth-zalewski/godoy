@@ -169,11 +169,9 @@ public class Exporter {
 	}
 	
 	/* Exportiert ein Framebild mit eingezeichneten Fenstern, gefensterte Snapshots und dazugehörige Spektren */
-	public void exportFramesWindowedSamples() {
+	public void exportFramesWindowedSamples(String filename) {
 		try {
-			for (int i = 0; i < frames.size(); i++) {
-				//if (i != 130 && i != 55) continue; //#
-								
+			for (int i = 0; i < frames.size(); i++) {				
 				Map<Integer, double[]> windowedSamples1 = frames.get(i).getSnapshots1();
 				Map<Integer, double[]> windowedSamples2 = frames.get(i).getSnapshots2();
 				
@@ -183,9 +181,13 @@ public class Exporter {
 				Map<Integer, double[]> spectrums2 = frames.get(i).getSpectrums2();
 				
 				int numberOfWindows = windowedSamples1.size();
+				int[] psp = frames.get(i).getPeriodStartingPoints();
+								
+				int halfOffset = (psp.length - numberOfWindows) / 2;
 				
 				for (int j = 0; j < numberOfWindows; j++) {
-					if (j != 150) continue; //#
+					//Nur diese exportieren, die auf einem relevanten Punkt liegen
+					if (psp[j + halfOffset] == 0) continue;
 					
 					double[] samples1 = windowedSamples1.get(j);
 					double[] samples2 = windowedSamples2.get(j);
@@ -485,15 +487,12 @@ public class Exporter {
 					    prevY = endY;
 					}
 			        
-			        File folder = new File("D:\\Uni\\Diplomarbeit\\Software\\output\\snapshots\\fr-" + frames.get(i).getTimePosition());
+			        File folder = new File("D:\\Uni\\Diplomarbeit\\Software\\output\\snapshots\\" + filename + "\\fr-" + frames.get(i).getTimePosition());
 			        folder.mkdirs();			        
 			        
-				    ImageIO.write(bi, "PNG", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\snapshots\\fr-" + frames.get(i).getTimePosition() + "\\win-" + j + ".png"));
-				    
-				    //if (j == 3) break;
+				    ImageIO.write(bi, "PNG", new File("D:\\Uni\\Diplomarbeit\\Software\\output\\snapshots\\" + filename + "\\fr-" + frames.get(i).getTimePosition() + "\\win-" + j + ".png"));
+
 				}
-				
-				//if (i == 0) break;
 			}
 				      
 	    } catch (IOException ie) {
@@ -845,17 +844,20 @@ public class Exporter {
 				int maxJ = -1;
 				
 				for (int j = 0; j < spectrum.length; j++) {
-
-					if (onlyRelevantFrequencies) {
-						double fq = (j * Clip.getClassSamplingRate() / (spectrogramm.get(0).length * 2));
-						if (fq < godoy.MINIMAL_RELEVANT_FREQUENCY || fq > godoy.MAXIMAL_RELEVANT_FREQUENCY) {
+					double fq = (j * Clip.getClassSamplingRate() / (spectrogramm.get(0).length * 2));
+					boolean isRelevantFrequency = fq >= godoy.MINIMAL_RELEVANT_FREQUENCY && fq <= godoy.MAXIMAL_RELEVANT_FREQUENCY;
+					
+					if (onlyRelevantFrequencies) {						
+						if (!isRelevantFrequency) {
 							continue;
 						}
 					}
 					
 					
-					int grayscale = (int)((Math.log10(spectrum[j] - 2 * oldMinValue) - minValue) * (255.0 / (maxValue - minValue)));	
-					if (Math.log10(spectrum[j] - 2 * oldMinValue) > max) {
+					int grayscale = (int)((Math.log10(spectrum[j] - 2 * oldMinValue) - minValue) * (255.0 / (maxValue - minValue)));
+					
+					//den maximalen Wert nur innerhalb des relevanten Frequenzbereichs bestimmen
+					if (isRelevantFrequency && Math.log10(spectrum[j] - 2 * oldMinValue) > max) { 
 						max = Math.log10(spectrum[j] - 2 * oldMinValue);
 						maxJ = j;
 					}

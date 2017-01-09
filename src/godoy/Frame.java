@@ -180,10 +180,10 @@ public class Frame {
 //        		 }
         		 
             	 //in dB umrechnen
-            	 //spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
+            	 spectralValue1 = 20.0 * Math.log10(spectralValue1 / DB_REFERENCE);
             	 snapshot1Spectrum[ffti] = spectralValue1;
             	   
-            	 //spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
+            	 spectralValue2 = 20.0 * Math.log10(spectralValue2 / DB_REFERENCE);
             	 snapshot2Spectrum[ffti] = spectralValue2;            	 
 
             }
@@ -216,8 +216,8 @@ public class Frame {
     	return wholeFrameSpectrum;
     }
     
-    public ArrayList<double[]> getDiffSpectrums(int percentage) {
-    	double p = percentage / 100;
+    public ArrayList<double[]> getDiffSpectrums() {
+    	double p = godoy.T_ANALYSIS_OFFSET;
     	
     	ArrayList<double[]> ret = new ArrayList<double[]>();
     	
@@ -234,9 +234,12 @@ public class Frame {
 				
 				ArrayList<Double> spectralDifferences = new ArrayList<Double>();
 				
-				/* Spektrale Differenz an einem Periodenanfangszeitpunkt berechnen */
-				for (int s = 0; s < spectrum1.length; s++) {		
-					spectralDifferences.add(spectrum1[s] - spectrum2[s]);
+				/* Spektrale Differenz berechnen */
+				for (int s = 0; s < spectrum1.length; s++) {
+					double frequency = (double)s * 0.5 * Clip.getClassSamplingRate() / spectrum1.length;
+					if (frequency > godoy.MINIMAL_RELEVANT_FREQUENCY && frequency < godoy.MAXIMAL_RELEVANT_FREQUENCY) {
+						spectralDifferences.add(spectrum1[s] - spectrum2[s]);
+					}
 				}
 				
 				double[] spectralDifferencesArray = new double[spectralDifferences.size()];
@@ -325,9 +328,9 @@ public class Frame {
 				/* Spektrale Differenz an einem Periodenanfangszeitpunkt berechnen */
 				for (int s = 0; s < spectrum1.length; s++) {		
 					double frequency = (double)s * 0.5 * Clip.getClassSamplingRate() / spectrum1.length;
-					if (frequency > godoy.MINIMAL_RELEVANT_FREQUENCY && frequency < godoy.MAXIMAL_RELEVANT_FREQUENCY) {
+					//if (frequency > godoy.MINIMAL_RELEVANT_FREQUENCY && frequency < godoy.MAXIMAL_RELEVANT_FREQUENCY) {
 						spectralDifferences.add(spectrum1[s] - spectrum2[s]);
-					}
+					//}
 				}
 				
 				double[] spectralDifferencesArray = new double[spectralDifferences.size()];
@@ -337,6 +340,7 @@ public class Frame {
 				}
 				
 				double[] sdaDCT = spectralDifferencesArray.clone();
+
 				DoubleDCT_1D dct = new DoubleDCT_1D(sdaDCT.length);
 				
 				dct.forward(sdaDCT, true);

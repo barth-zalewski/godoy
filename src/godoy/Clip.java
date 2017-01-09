@@ -265,46 +265,77 @@ public class Clip {
     	
     	return characteristicsVectorSeries;
     }    
-//    
-//    private ArrayList<double[]>createCharacteristicsVectorCombined() {
-//    	ArrayList<double[]> all = new ArrayList<double[]>();
-//    	
-//    	int[] histogramm = analyzer.getHistogramm();
-//		
-//		int maxI = -1, maxPeak = -1;
-//		
-//		for (int i = 0; i < histogramm.length; i++) {					
-//			if (histogramm[i] > maxPeak) {
-//				maxPeak = histogramm[i];
-//				maxI = i;
-//			}
-//		}
-//		
-//    	for (int i = 0; i < frames.size(); i++) {
-//    		ArrayList<double[]> combinedCoeeficients = frames.get(i).getCombinedCoefficients(maxI);
-//    		
-//    		for (int j = 0; j < combinedCoeeficients.size(); j++) {    			
-//    			characteristicsVectorSeries.add(combinedCoeeficients.get(j));    			
-//    		}    	    		
-//    	}
-//    	
-//    	return characteristicsVectorSeries;
-//    }    
+    
+    private ArrayList<double[]> createCharacteristicsVectorCombinedOld() {
+    	ArrayList<double[]> all = new ArrayList<double[]>();
+    	
+    	double[] histogramm = analyzer.getHistogramm();
+		
+		int maxI = -1;
+		double maxPeak = -1;
+		
+		for (int i = 0; i < histogramm.length; i++) {					
+			if (histogramm[i] > maxPeak) {
+				maxPeak = histogramm[i];
+				maxI = i;
+			}
+		}
+		
+    	for (int i = 0; i < frames.size(); i++) {
+    		ArrayList<double[]> combinedCoeeficients = frames.get(i).getCombinedCoefficients(maxI);
+    		
+    		for (int j = 0; j < combinedCoeeficients.size(); j++) {    			
+    			characteristicsVectorSeries.add(combinedCoeeficients.get(j));    			
+    		}    	    		
+    	}
+    	
+    	return characteristicsVectorSeries;
+    }    
 
-    private ArrayList<double[]>createCharacteristicsVectorCombined() {
-    	double deepValleyFrequency = analyzer.getDeepValleyFrequency();    	
+    /* MFCC + Deep valley frequency + Cylic peak frequency + Pitch */
+    private ArrayList<double[]> createCharacteristicsVectorCombined() {
+    	double deepValleyFrequency = analyzer.getDeepValleyFrequency(),  
+    		   cyclicPeakFrequency = analyzer.getCyclicPeakFrequency();  
+    	
+    	/* Local configurations */
+    	final boolean CONSIDER_DEEP_VALLEY_FQ = true,
+    				  CONSIDER_CYCLIC_PEAK_FQ = false,
+    				  CONSIDER_PITCH = false;
+    	
+    	int moreOfIndex = 0;
+    	
+    	if (CONSIDER_DEEP_VALLEY_FQ) moreOfIndex++;
+    	if (CONSIDER_CYCLIC_PEAK_FQ) moreOfIndex++;
+    	if (CONSIDER_PITCH) moreOfIndex++;
     	
 		for (int i = 0; i < frames.size(); i++) {
     		ArrayList<double[]> mfccCoefficientsAL = frames.get(i).getMFCCCoeffiencts();
+    		double pitch = frames.get(i).getPitch();
     		
     		/* Nur ein pro Frame */
     		double[] mfccCoefficients = mfccCoefficientsAL.get(0);
-    		double[] combinedCoefficients = new double[mfccCoefficients.length + 1];
+    		double[] combinedCoefficients = new double[mfccCoefficients.length + moreOfIndex];
     		
     		for (int cc = 0; cc < mfccCoefficients.length; cc++) {
     			combinedCoefficients[cc] = mfccCoefficients[cc];
     		}
-    		combinedCoefficients[mfccCoefficients.length] = deepValleyFrequency;
+    		
+    		int additionalIndex = 0;
+    		
+    		if (CONSIDER_DEEP_VALLEY_FQ) {
+    			combinedCoefficients[mfccCoefficients.length + additionalIndex] = deepValleyFrequency;
+    			additionalIndex++;
+    		}
+    		
+    		if (CONSIDER_CYCLIC_PEAK_FQ) {
+    			combinedCoefficients[mfccCoefficients.length + additionalIndex] = cyclicPeakFrequency;
+    			additionalIndex++;
+    		}
+    		
+    		if (CONSIDER_PITCH) {
+    			combinedCoefficients[mfccCoefficients.length + additionalIndex] = pitch;
+    			additionalIndex++;
+    		}
     		
     		characteristicsVectorSeries.add(combinedCoefficients);   	    		
     	}

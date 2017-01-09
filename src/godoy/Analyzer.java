@@ -247,22 +247,10 @@ public class Analyzer {
 	}
 	
 	public ArrayList<double[]> getSpectrogrammClosedOpenDifference() {
-		ArrayList<double[]> spectrogramm = new ArrayList<double[]>();
-		double[] histogramm = getHistogramm();
+		ArrayList<double[]> spectrogramm = new ArrayList<double[]>();		
 		
-		/* Suchen, bei welchem Offset es am meisten Peaks gibt */
-		int maxI = -1;
-		double maxPeak = -1;
-		
-		for (int i = 0; i < histogramm.length; i++) {					
-			if (histogramm[i] > maxPeak) {
-				maxPeak = histogramm[i];
-				maxI = i;
-			}
-		}
-
 		for (int i = 0; i < frames.size(); i++) {
-			ArrayList<double[]> diffSpectrums = frames.get(i).getDiffSpectrums(maxI);
+			ArrayList<double[]> diffSpectrums = frames.get(i).getDiffSpectrums();
 			
 			for (int s = 0; s < diffSpectrums.size(); s++) {
 				spectrogramm.add(diffSpectrums.get(s));
@@ -383,7 +371,14 @@ public class Analyzer {
 			double min = Double.POSITIVE_INFINITY;
 			int minJ = -1;
 			
-			for (int j = 0; j < spectrum.length; j++) {				
+			for (int j = 0; j < spectrum.length; j++) {		
+				double fq = (j * Clip.getClassSamplingRate() / (spectrogramm.get(0).length * 2));
+				boolean isRelevantFrequency = fq >= godoy.MINIMAL_RELEVANT_FREQUENCY && fq <= godoy.MAXIMAL_RELEVANT_FREQUENCY;
+				
+				if (!isRelevantFrequency) {
+					continue;
+				}
+				
 				if (Math.log10(spectrum[j]) - minValue < min) {
 					min = Math.log10(spectrum[j]) - minValue;
 					minJ = j;
@@ -396,5 +391,38 @@ public class Analyzer {
 	    sumMinJ /= spectrogramm.size();
 	    
 	    return sumMinJ * Clip.getClassSamplingRate() / (spectrogramm.get(0).length * 2);
+	}
+	
+	public double getCyclicPeakFrequency() {
+		ArrayList<double[]> spectrogramm = getSpectrogrammClosedOpenDifference();
+		
+		int sumMaxJ = 0;
+		
+		for (int i = 0; i < spectrogramm.size(); i++) {
+			double[] spectrum = spectrogramm.get(i);
+			
+			double max = Double.NEGATIVE_INFINITY;		
+			int maxJ = -1;
+			
+			for (int j = 0; j < spectrum.length; j++) {
+				double fq = (j * Clip.getClassSamplingRate() / (spectrogramm.get(0).length * 2));
+				boolean isRelevantFrequency = fq >= godoy.MINIMAL_RELEVANT_FREQUENCY && fq <= godoy.MAXIMAL_RELEVANT_FREQUENCY;
+				
+				if (!isRelevantFrequency) {
+					continue;
+				}
+				
+				if (isRelevantFrequency && spectrum[j] > max) { 
+					max = spectrum[j];	
+					maxJ = j;
+				}				
+			}
+			
+			sumMaxJ += maxJ;			
+		}
+		
+		sumMaxJ /= spectrogramm.size();
+		
+		return sumMaxJ * Clip.getClassSamplingRate() / (spectrogramm.get(0).length * 2);
 	}
 }
