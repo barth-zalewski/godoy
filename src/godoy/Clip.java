@@ -208,6 +208,8 @@ public class Clip {
     }
     
     private ArrayList<double[]> createCharacteristicsVectorCombinedMFCC_DCT() {
+    	final boolean CONSIDER_PITCH = true;    	
+    	
     	for (int i = 0; i < frames.size(); i++) {
     		ArrayList<double[]> dctCoeeficients = frames.get(i).getDCTCoeffiencts();
     		ArrayList<double[]> mfccCoeeficients = frames.get(i).getMFCCCoeffiencts();
@@ -217,13 +219,16 @@ public class Clip {
     		for (int j = 0; j < dctCoeeficients.size(); j++) {
     			double[] dctVector = dctCoeeficients.get(j),
     					 mfccVector = mfccCoeeficients.get(0);
-    			double[] combinedVector = new double[dctVector.length + mfccVector.length];
+    			double[] combinedVector = new double[dctVector.length + mfccVector.length + (CONSIDER_PITCH ? 1 : 0)];
     			
     			for (int k = 0; k < mfccVector.length; k++) {
     				combinedVector[k] = mfccVector[k];
     			}
     			for (int k = 0; k < dctVector.length; k++) {
     				combinedVector[k + mfccVector.length] = dctVector[k];
+    			}
+    			if (CONSIDER_PITCH) {
+    				combinedVector[dctVector.length + mfccVector.length] = frames.get(i).getPitch();
     			}
     			
     			characteristicsVectorSeries.add(combinedVector);    			
