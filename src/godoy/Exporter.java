@@ -171,7 +171,9 @@ public class Exporter {
 	/* Exportiert ein Framebild mit eingezeichneten Fenstern, gefensterte Snapshots und dazugehörige Spektren */
 	public void exportFramesWindowedSamples(String filename) {
 		try {
-			for (int i = 0; i < frames.size(); i++) {				
+			for (int i = 0; i < frames.size(); i++) {		
+				if (i != 2) continue;
+				
 				Map<Integer, double[]> windowedSamples1 = frames.get(i).getSnapshots1();
 				Map<Integer, double[]> windowedSamples2 = frames.get(i).getSnapshots2();
 				
@@ -187,7 +189,8 @@ public class Exporter {
 				
 				for (int j = 0; j < numberOfWindows; j++) {
 					//Nur diese exportieren, die auf einem relevanten Punkt liegen
-					if (psp[j + halfOffset] == 0) continue;
+					int _i = j + halfOffset - (int)(frames.get(i).getSamplesPerPeriod() * godoy.T_ANALYSIS_OFFSET);
+					if (_i < 0 || psp[_i] == 0) continue;
 					
 					double[] samples1 = windowedSamples1.get(j);
 					double[] samples2 = windowedSamples2.get(j);
@@ -400,6 +403,9 @@ public class Exporter {
 					/* Zuerst kleinsten und größten Sample finden */
 					double spMin = Double.POSITIVE_INFINITY, spMax = Double.NEGATIVE_INFINITY;
 					
+					/* Differenzen sammeln */
+					double[] diffs = new double[spectrum1.length];
+					
 					for (int s = 0; s < spectrum1.length; s++) {					
 					    if (spectrum1[s] < spMin) {
 					    	spMin = spectrum1[s];
@@ -423,6 +429,8 @@ public class Exporter {
 					    if (diff > spMax) {
 					    	spMax = diff;
 					    }
+					    
+					    diffs[s] = diff;
 					}
 					
 					double spAbsMax = Math.max(Math.abs(spMin), Math.abs(spMax));
@@ -486,6 +494,18 @@ public class Exporter {
 					    prevX = endX;
 					    prevY = endY;
 					}
+			        
+			        //Differenzen mittelwertfrei machen
+			        double diffMean = 0;
+			        for (int dd = 0; dd < diffs.length; dd++) {
+			        	diffMean += diffs[dd];
+			        }
+			        diffMean /= diffs.length;
+			        for (int dd = 0; dd < diffs.length; dd++) {
+			        	diffs[dd] -= diffMean;
+			        }
+			        double stDev = Utils.standardDeviation(diffs);
+			        System.out.println("stdev[" + filename + "] = " + stDev);
 			        
 			        File folder = new File("D:\\Uni\\Diplomarbeit\\Software\\output\\snapshots\\" + filename + "\\fr-" + frames.get(i).getTimePosition());
 			        folder.mkdirs();			        

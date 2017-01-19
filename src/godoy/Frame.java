@@ -452,9 +452,9 @@ public class Frame {
 				/* Spektrale Differenz an einem Periodenanfangszeitpunkt berechnen */
 				for (int s = 0; s < spectrum1.length; s++) {		
 					double frequency = (double)s * 0.5 * Clip.getClassSamplingRate() / spectrum1.length;
-					if (frequency > godoy.MINIMAL_RELEVANT_FREQUENCY && frequency < godoy.MAXIMAL_RELEVANT_FREQUENCY) {
+					//if (frequency > godoy.MINIMAL_RELEVANT_FREQUENCY && frequency < godoy.MAXIMAL_RELEVANT_FREQUENCY) {
 						spectralDifferences.add(spectrum1[s] - spectrum2[s]);
-					}
+					//}
 				}
 				
 				double[] spectralDifferencesArray = new double[spectralDifferences.size()];

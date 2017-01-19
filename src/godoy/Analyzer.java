@@ -222,7 +222,7 @@ public class Analyzer {
 							  sums[hi] :
 						      1;
 		}
-	}
+	}	
 	
 	public ArrayList<double[]> getPeaksByFrame() {
 		return peaksByFrame;

@@ -63,69 +63,80 @@ public class godoy {
 		
 		/** TRAINING / ERKENNUNG **/
 		
-		CorpusExtractor.onlyFemales();
+		if (false) {
+			CorpusExtractor.onlyFemales();		
 		
-		/* Initialisiert alle Sprecher mit den zugehörigen Merkmalvektorfolgen */
-		ArrayList<Speaker> corpusForTraining = CorpusExtractor.getCorpusForApplicationTraining("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");		
-		Recognizer recognizer = new Recognizer();
-		recognizer.train(corpusForTraining);
-		
-		ArrayList<Speaker> corpusForTesting = CorpusExtractor.getCorpusForApplicationTesting("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");	
-		
-		//Prozentuale Erkennungsrate speichern
-		int correctlyRecognizedSpeakers = 0;		
-		for (int i = 0; i < corpusForTesting.size(); i++) {
-			HashMap<String, Integer> recognized = recognizer.recognize(corpusForTesting.get(i));
-			int maxRecognizedProbability = 0;
-			String idOfSpeakerWithMaxProbability = "";
+			/* Initialisiert alle Sprecher mit den zugehörigen Merkmalvektorfolgen */
+			ArrayList<Speaker> corpusForTraining = CorpusExtractor.getCorpusForApplicationTraining("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");		
+			Recognizer recognizer = new Recognizer();
+			recognizer.train(corpusForTraining);
 			
-			int recognizedProbabilityOfThis = 0;
+			ArrayList<Speaker> corpusForTesting = CorpusExtractor.getCorpusForApplicationTesting("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");	
 			
-			for (HashMap.Entry<String, Integer> estimate : recognized.entrySet()) {
-				if (estimate.getValue() > maxRecognizedProbability) {
-					maxRecognizedProbability = estimate.getValue();
-					idOfSpeakerWithMaxProbability = estimate.getKey();
+			//Prozentuale Erkennungsrate speichern
+			int correctlyRecognizedSpeakers = 0;		
+			for (int i = 0; i < corpusForTesting.size(); i++) {
+				HashMap<String, Integer> recognized = recognizer.recognize(corpusForTesting.get(i));
+				int maxRecognizedProbability = 0;
+				String idOfSpeakerWithMaxProbability = "";
+				
+				int recognizedProbabilityOfThis = 0;
+				
+				for (HashMap.Entry<String, Integer> estimate : recognized.entrySet()) {
+					if (estimate.getValue() > maxRecognizedProbability) {
+						maxRecognizedProbability = estimate.getValue();
+						idOfSpeakerWithMaxProbability = estimate.getKey();
+					}
+					if (estimate.getKey().equals(corpusForTesting.get(i).getId())) {
+						recognizedProbabilityOfThis = estimate.getValue();
+					}
 				}
-				if (estimate.getKey().equals(corpusForTesting.get(i).getId())) {
-					recognizedProbabilityOfThis = estimate.getValue();
+				
+				if (idOfSpeakerWithMaxProbability.equals(corpusForTesting.get(i).getId())) {
+					correctlyRecognizedSpeakers++;
+					System.out.println(corpusForTesting.get(i).getId() + " has been recognized with probability of " + maxRecognizedProbability + "%");
 				}
+				else {
+					System.out.println(corpusForTesting.get(i).getId() + " has NOT been recognized. (" + recognizedProbabilityOfThis + "% :" + maxRecognizedProbability + "% for " + idOfSpeakerWithMaxProbability + ")");
+				}					
 			}
 			
-			if (idOfSpeakerWithMaxProbability.equals(corpusForTesting.get(i).getId())) {
-				correctlyRecognizedSpeakers++;
-				System.out.println(corpusForTesting.get(i).getId() + " has been recognized with probability of " + maxRecognizedProbability + "%");
-			}
-			else {
-				System.out.println(corpusForTesting.get(i).getId() + " has NOT been recognized. (" + recognizedProbabilityOfThis + "% :" + maxRecognizedProbability + "% for " + idOfSpeakerWithMaxProbability + ")");
-			}					
+			System.out.println("==================================");
+			System.out.println("Recognition rate = " + ((int)(100 * correctlyRecognizedSpeakers / corpusForTesting.size())) + "%");
 		}
-		
-		System.out.println("==================================");
-		System.out.println("Recognition rate = " + ((int)(100 * correctlyRecognizedSpeakers / corpusForTesting.size())) + "%");
-		
 		
 		
 		/** ALTE LOGIK - zum Testen des Programms bei nur einer Datei. **/
 		
-//		/* Audio-Datei öffnen */
-//		File wavFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus\\old\\dr1-fetb0-si1778.wav");
-//		/* Pitch-Listing-Datei öffnen */
-//		File pitchListingFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus\\old\\dr1-fetb0-si1778.txt");
-//		
-//		try {
-//			Clip clip = Clip.newInstance(wavFile, pitchListingFile, 0.5);		
-//			//clip.getExporter().exportFramesWindowedSamples();
-//			//clip.getExporter().exportSpectrums();
-//			//clip.getExporter().exportPeakPositions();
-//			//clip.getExporter().exportPeaksPositionHistogramm();
-//			
-//			clip.createCharacteristicsVector();
-//		}
-//		catch (Exception ex) {
-//			System.out.println("Die Verarbeitung der Audio-Datei ist fehlgeschlagen.");
-//			ex.printStackTrace(System.out);
-//		}
-//		
+		if (true) {
+			/* Audio-Datei öffnen */
+			File wavFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus\\old\\male----1.wav");
+			/* Pitch-Listing-Datei öffnen */
+			File pitchListingFile = new File("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus\\old\\male----1.pitch");
+			
+			try {
+				ArrayList<double[]> allDiffs = new ArrayList<double[]>();
+
+				String fileStub = "D:\\Uni\\Diplomarbeit\\Software\\selected-corpus\\old\\male----1";
+				for (double i = 0.25; i <= 0.85; i += 0.05) {
+					//T_ANALYSIS_OFFSET = (double)i / 100;
+					Clip clip = Clip.newInstance(wavFile, pitchListingFile, i);	
+					String[] partsOfFilename = fileStub.split("\\\\");
+					clip.getExporter().exportFramesWindowedSamples(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName() + "---" + i);
+				}
+				
+				//clip.getExporter().exportFramesWindowedSamples();
+				//clip.getExporter().exportSpectrums();
+				//clip.getExporter().exportPeakPositions();
+				//clip.getExporter().exportPeaksPositionHistogramm();
+				
+			}
+			catch (Exception ex) {
+				System.out.println("Die Verarbeitung der Audio-Datei ist fehlgeschlagen.");
+				ex.printStackTrace(System.out);
+			}
+		}
+		
 		
 		System.out.println("Programm endet.");
 	}	
