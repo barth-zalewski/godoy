@@ -68,17 +68,17 @@ public class godoy {
 		
 			int recognitionRateSum = 0, recognitionRateCount = 0;
 			
-			for (int fi = 0; fi < 2; fi++) {
+			for (int fi = 0; fi < 10; fi++) {
 				System.out.println("==================================");
 				System.out.println("fi = " + fi);
 				System.out.println("==================================");
 				
 				/* Initialisiert alle Sprecher mit den zugehörigen Merkmalvektorfolgen */
-				ArrayList<Speaker> corpusForTraining = CorpusExtractor.getCorpusForApplicationTraining("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", 0);		
+				ArrayList<Speaker> corpusForTraining = CorpusExtractor.getCorpusForApplicationTraining("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", fi);		
 				Recognizer recognizer = new Recognizer();
 				recognizer.train(corpusForTraining);
 				
-				ArrayList<Speaker> corpusForTesting = CorpusExtractor.getCorpusForApplicationTesting("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", 0);	
+				ArrayList<Speaker> corpusForTesting = CorpusExtractor.getCorpusForApplicationTesting("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", fi);	
 				
 				//Prozentuale Erkennungsrate speichern
 				int correctlyRecognizedSpeakers = 0;		
