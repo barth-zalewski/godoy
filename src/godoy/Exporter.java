@@ -188,10 +188,13 @@ public class Exporter {
 				int halfOffset = (psp.length - numberOfWindows) / 2;
 				
 				for (int j = 0; j < numberOfWindows; j++) {
-					//Nur diese exportieren, die auf einem relevanten Punkt liegen
-					int _i = j + halfOffset - (int)(frames.get(i).getSamplesPerPeriod() * godoy.T_ANALYSIS_OFFSET);
-					if (_i < 0 || psp[_i] == 0) continue;
-					
+					int samplesPerWindow = frames.get(i).getSamplesPerWindow(),
+						samplesPerWindowHalf = samplesPerWindow / 2;
+						
+					//Nur diese exportieren, die auf einem relevanten Punkt liegen					
+					int pspi = j + halfOffset - (int)(frames.get(i).getSamplesPerPeriod() * godoy.T_ANALYSIS_OFFSET) - samplesPerWindowHalf;
+					if (pspi < 0 || pspi > psp.length - 1 || psp[pspi] == 0) continue;
+										
 					double[] samples1 = windowedSamples1.get(j);
 					double[] samples2 = windowedSamples2.get(j);
 					
@@ -269,13 +272,35 @@ public class Exporter {
 					    prevY = endY;
 					}
 					
+					/* Lokale Peaks einzeichnen */
+			        prevX = 0;
+			        prevY = 0;
+			        
+			        ig2.setPaint(Color.green);
+			        
+			        int[] localMaxima = frames.get(i).getPeriodStartingPoints();
+			        
+			        for (int s = 0; s < localMaxima.length; s++) {					
+					    int endX = prevX + pixelsPerSample, 
+					    	endY = 0;
+					    
+					    double sample = localMaxima[s];						    
+					    
+					    if (sample == 1) {
+					    	endY = (int)(2* height);
+					    
+					    	ig2.drawLine(prevX, prevY, endX, endY);
+					    }
+					    
+					    prevX = endX;
+					    prevY = endY;
+					}
+					
 					//Fenster hinzufügen
-					int samplesPerWindow = frames.get(i).getSamplesPerWindow(),
-					    samplesPerWindowHalf = samplesPerWindow / 2;
 					
 					ig2.setPaint(Color.gray);
 					
-					int firstWindowCenter = j * pixelsPerSample + samplesPerWindowHalf * pixelsPerSample;
+					int firstWindowCenter = (j + samplesPerWindowHalf) * pixelsPerSample;
 					ig2.drawLine(firstWindowCenter, 0, firstWindowCenter, height);
 					
 					int secondWindowCenter = firstWindowCenter + (int)(frames.get(i).getSamplesPerPeriod() * frames.get(i).getSecondSpectrumOffset()) * pixelsPerSample;

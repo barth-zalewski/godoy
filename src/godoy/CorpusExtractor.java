@@ -11,6 +11,8 @@ public class CorpusExtractor {
 	private static ArrayList<Speaker> corpusForApplicationTraining = new ArrayList<Speaker>();
 	private static ArrayList<Speaker> corpusForApplicationTesting = new ArrayList<Speaker>();
 	
+	private static int indexOfFileForTesting = -1;
+	
 	/* Liefert einfach nur Dateinamen zurück. Sprecherzuordnung ist unwichtig. */
 	public static ArrayList<String> getCorpusForExploration(String basePath) {
 		if (gender.equals("*") || gender.equals("females")) {			
@@ -50,6 +52,11 @@ public class CorpusExtractor {
 		return corpusForApplicationTraining;
 	}
 	
+	public static ArrayList<Speaker> getCorpusForApplicationTraining(String basePath, int index) {
+		indexOfFileForTesting = index;
+		return getCorpusForApplicationTraining(basePath);
+	}
+	
 	public static ArrayList<Speaker> getCorpusForApplicationTesting(String basePath) {
 		if (gender.equals("*") || gender.equals("females")) {			
 			File baseFolder = new File(basePath + "\\females");
@@ -62,26 +69,47 @@ public class CorpusExtractor {
 		return corpusForApplicationTesting;
 	}
 	
+	public static ArrayList<Speaker> getCorpusForApplicationTesting(String basePath, int index) {
+		indexOfFileForTesting = index;
+		return getCorpusForApplicationTesting(basePath);
+	}
+	
 	private static void listSpeakers(final File folder, boolean isTraining) {
 		HashMap<String, ArrayList<String>> stringCorpus = new HashMap<String, ArrayList<String>>();
+		
+		int fileIndex = -1;
 		
 		for (final File fileEntry : folder.listFiles()) {
 	        if (fileEntry.isDirectory()) {
 	        	listSpeakers(fileEntry, isTraining);
-	        } else {
+	        } else {	        	
 	        	if (fileEntry.getName().indexOf(".wav") > -1) {
+	        		fileIndex++;		        	
+		        	
 	        		String path = fileEntry.getAbsolutePath(),
 	        			   absolutePathWithoutExtension = path.substring(0, path.lastIndexOf('.'));
 	        		
 	        		String onlyPath = absolutePathWithoutExtension.substring(0, absolutePathWithoutExtension.lastIndexOf(File.separator));
 	        		onlyPath = onlyPath.substring(onlyPath.lastIndexOf(File.separator) + 1);
 	        		
-	        		if ((isTraining && path.indexOf("test--") == -1) || (!isTraining && path.indexOf("test--") > -1)) { //Strikt
-	        	    //if (isTraining || (!isTraining && path.indexOf("test--") > -1)) { //Locker
+	        		boolean isTrainingAndFileIsForTraining = isTraining;
+	        		boolean isTestingAndFileIsForTesting = !isTraining;
+	        		
+	        		//Falls nicht definiert, orientiere dich am Präfix "test--"
+	        		if (indexOfFileForTesting == -1) {
+	        			isTrainingAndFileIsForTraining = isTrainingAndFileIsForTraining && path.indexOf("test--") == -1;
+	        			isTestingAndFileIsForTesting = isTestingAndFileIsForTesting && path.indexOf("test--") > -1;
+	        		}
+	        		else {
+	        			isTrainingAndFileIsForTraining = isTrainingAndFileIsForTraining && fileIndex != indexOfFileForTesting;
+	        			isTestingAndFileIsForTesting = isTestingAndFileIsForTesting && fileIndex == indexOfFileForTesting;
+	        		}
+	        		
+	        		if (isTrainingAndFileIsForTraining || isTestingAndFileIsForTesting) { 
 	        			if (stringCorpus.get(onlyPath) == null) {
 	        				stringCorpus.put(onlyPath, new ArrayList<String>());
 	        			}
-	        			
+	        			if (isTestingAndFileIsForTesting) System.out.println("Datei zum Testen = " + absolutePathWithoutExtension);
 	        			stringCorpus.get(onlyPath).add(absolutePathWithoutExtension);	        			
 	        		}
 	        	}

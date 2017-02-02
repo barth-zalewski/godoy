@@ -193,7 +193,7 @@ public class Analyzer {
 			int[] periodStartingPoints = frames.get(i).getPeriodStartingPoints(); //Dieses Array hat die Länge == Frame-Gesamtlänge
 			int halfLengthOffset = (int)((periodStartingPoints.length - stDevs.length) / 2);
 			
-			//Peaks-Länge mit allSamples angleichen
+			//StDevs-Länge mit allSamples angleichen
 			double[] stDevsFilled = new double[periodStartingPoints.length];
 			
 			for (int p = 0; p < stDevs.length; p++) {
