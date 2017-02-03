@@ -74,6 +74,7 @@ public class godoy {
 				System.out.println("==================================");
 				
 				/* Initialisiert alle Sprecher mit den zugehörigen Merkmalvektorfolgen */
+				CorpusExtractor.clear();
 				ArrayList<Speaker> corpusForTraining = CorpusExtractor.getCorpusForApplicationTraining("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus", fi);		
 				Recognizer recognizer = new Recognizer();
 				recognizer.train(corpusForTraining);

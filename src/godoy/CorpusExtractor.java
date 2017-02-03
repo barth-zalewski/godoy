@@ -136,6 +136,11 @@ public class CorpusExtractor {
 		}
 	}
 	
+	public static void clear() {
+		corpusForApplicationTraining = new ArrayList<Speaker>();
+		corpusForApplicationTesting = new ArrayList<Speaker>();
+	}
+	
 	public static void onlyFemales() {
 		gender = "females";
 	}
