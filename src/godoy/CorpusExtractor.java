@@ -143,13 +143,16 @@ public class CorpusExtractor {
 	
 	public static void onlyFemales() {
 		gender = "females";
+		System.out.println("Nur Frauen.");
 	}
 	
 	public static void onlyMales() {
 		gender = "males";
+		System.out.println("Nur Männer.");
 	}
 	
 	public static void all() {
 		gender = "*";
+		System.out.println("Männer und Frauen.");
 	}
 }

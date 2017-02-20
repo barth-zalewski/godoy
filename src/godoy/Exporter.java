@@ -885,7 +885,7 @@ public class Exporter {
 		    for (int i = 0; i < spectrogramm.size(); i++) {
 				double[] spectrum = spectrogramm.get(i);
 				
-				double max = Double.NEGATIVE_INFINITY;
+				double max = Double.POSITIVE_INFINITY;
 				int maxJ = -1;
 				
 				for (int j = 0; j < spectrum.length; j++) {
@@ -902,7 +902,7 @@ public class Exporter {
 					int grayscale = (int)((Math.log10(spectrum[j] - 2 * oldMinValue) - minValue) * (255.0 / (maxValue - minValue)));
 					
 					//den maximalen Wert nur innerhalb des relevanten Frequenzbereichs bestimmen
-					if (isRelevantFrequency && Math.log10(spectrum[j] - 2 * oldMinValue) > max) { 
+					if (isRelevantFrequency && Math.log10(spectrum[j] - 2 * oldMinValue) < max) { 
 						max = Math.log10(spectrum[j] - 2 * oldMinValue);
 						maxJ = j;
 					}

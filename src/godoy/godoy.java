@@ -25,46 +25,48 @@ public class godoy {
 		/** EXPLORATIVER TEIL **/
 		
 		/* Korpus initialisieren */
-		CorpusExtractor.onlyMales();
-		ArrayList<String> corpus = CorpusExtractor.getCorpusForExploration("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");
-		
-		if (false) for (String fileStub : corpus) {
-			File wavFile = new File(fileStub + ".wav");
-			File pitchListingFile = new File(fileStub + ".pitch");
-			System.out.println("Verarbeite Datei " + fileStub);
-			try {	
-				for (double sp = 0.25; sp <= 0.85; sp += 0.05) {
-					//Wegen der Präzisionfehler...
-		            sp = Math.round(sp * 1000.0) / 1000.0;
-		            
-					Clip clip = Clip.newInstance(wavFile, pitchListingFile, godoy.T_ANALYSIS_DELTA);
-					//ArrayList<double[]> spectrogramm = clip.getAnalyzer().getSpectrogrammFullFrames();
-					String[] partsOfFilename = fileStub.split("\\\\");
-					clip.getExporter().exportFramesWindowedSamples(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());
-					//clip.getExporter().exportSpectrogrammFullFrames(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());
-					//clip.getExporter().exportSpectrogrammClosedOpenDifference(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());
-					//clip.getExporter().exportHistogrammPeaksByFrequency(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());					
-//					clip.getAnalyzer().trackPeaks();
-//					clip.getAnalyzer().peaksPositionsHistogramm();
-					clip.getAnalyzer().trackStDevs();
-					clip.getAnalyzer().stDevHistogramm();								
-					GlobalAnalyzer.addHistogrammRow(clip.getAnalyzer().getHistogramm(), sp);
+		if (false) {
+			CorpusExtractor.onlyMales();
+			ArrayList<String> corpus = CorpusExtractor.getCorpusForExploration("D:\\Uni\\Diplomarbeit\\Software\\selected-corpus");
+			
+			for (String fileStub : corpus) {
+				File wavFile = new File(fileStub + ".wav");
+				File pitchListingFile = new File(fileStub + ".pitch");
+				System.out.println("Verarbeite Datei " + fileStub);
+				try {	
+//					for (double sp = 0.25; sp <= 0.85; sp += 0.05) {
+						//Wegen der Präzisionfehler...
+//			            sp = Math.round(sp * 1000.0) / 1000.0;
+			            
+						Clip clip = Clip.newInstance(wavFile, pitchListingFile, godoy.T_ANALYSIS_DELTA);
+						//ArrayList<double[]> spectrogramm = clip.getAnalyzer().getSpectrogrammFullFrames();
+						String[] partsOfFilename = fileStub.split("\\\\");
+//						clip.getExporter().exportFramesWindowedSamples(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());
+//						clip.getExporter().exportSpectrogrammFullFrames(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());
+						clip.getExporter().exportSpectrogrammClosedOpenDifference(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());
+//						clip.getExporter().exportHistogrammPeaksByFrequency(partsOfFilename[partsOfFilename.length - 2] + "---" + wavFile.getName());					
+//						clip.getAnalyzer().trackPeaks();
+//						clip.getAnalyzer().peaksPositionsHistogramm();
+//						clip.getAnalyzer().trackStDevs();
+//						clip.getAnalyzer().stDevHistogramm();								
+//						GlobalAnalyzer.addHistogrammRow(clip.getAnalyzer().getHistogramm(), sp);
+//					}
+				}
+				catch (Exception ex) {
+					System.out.println("Die Verarbeitung der Audio-Datei " + fileStub + " ist fehlgeschlagen.");
+					ex.printStackTrace(System.out);
 				}
 			}
-			catch (Exception ex) {
-				System.out.println("Die Verarbeitung der Audio-Datei " + fileStub + " ist fehlgeschlagen.");
-				ex.printStackTrace(System.out);
-			}
+			
+			/* Peak-Histogramm erzeugen */
+			LinkedHashMap<Double, double[]> histogramm2D = GlobalAnalyzer.getHistogramm2D();
+			GlobalExporter.exportHistogramm2D(histogramm2D);
 		}
-		
-		/* Peak-Histogramm erzeugen */
-//		LinkedHashMap<Double, double[]> histogramm2D = GlobalAnalyzer.getHistogramm2D();
-//		GlobalExporter.exportHistogramm2D(histogramm2D);
 		
 		/** TRAINING / ERKENNUNG **/
 		
 		if (true) {
-			CorpusExtractor.onlyFemales();		
+			CorpusExtractor.all();		
 		
 			int recognitionRateSum = 0, recognitionRateCount = 0;
 			

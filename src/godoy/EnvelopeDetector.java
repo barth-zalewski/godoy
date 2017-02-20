@@ -12,46 +12,7 @@ public class EnvelopeDetector {
 	public void getEnvelope(double[] samples) {
 		//localMaximumBasedEnvelopeDetector(samples);
 		analyticSignalViaHilbert(samples);
-	}
-	
-	/* Zurzeit benutze Methode - eine effektive Berechnung, indem lokale Maxima gefunden werden */
-	private void localMaximumBasedEnvelopeDetector(double[] samples) {		
-		double[] samplesWithPeaks = new double[samples.length];
-		
-		for (int i = 0; i < samples.length; i++) {
-			if (i == 0 || i == samples.length - 1) {
-				samplesWithPeaks[i] = samples[i];
-			}
-			else {
-				if (samples[i] > samples[i - 1] && samples[i] > samples[i + 1]) {
-					samplesWithPeaks[i] = samples[i];
-				}
-				else {
-					samplesWithPeaks[i] = Double.NEGATIVE_INFINITY;
-				}
-			}
-		}
-		
-		for (int i = 1; i < samplesWithPeaks.length - 1; i++) {
-			if (samplesWithPeaks[i] == Double.NEGATIVE_INFINITY) {
-				double previous = Double.NEGATIVE_INFINITY, next = Double.NEGATIVE_INFINITY;
-				int pi = i - 1, ni = i + 1;
-				while (previous == Double.NEGATIVE_INFINITY) {
-					previous = samplesWithPeaks[pi];
-					pi--;
-				}
-				while (next == Double.NEGATIVE_INFINITY) {
-					next = samplesWithPeaks[ni];
-					ni++;
-				}
-				samplesWithPeaks[i] = (previous + next) / 2;
-			}
-		}
-		
-		for (int i = 0; i < samples.length; i++) {
-			samples[i] = samplesWithPeaks[i];
-		}
-	}
+	}	
 	
 	/* Analytisches Signal mit der Hilber-Transformation */
 	private void analyticSignalViaHilbert(double[] samples) {

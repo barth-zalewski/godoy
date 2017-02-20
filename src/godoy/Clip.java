@@ -30,8 +30,6 @@ public class Clip {
     
     private final PitchAnalyzer pitchAnalyzer;
     
-    private final int frameSize;
-    
     private Exporter exporter;
     
     private Analyzer analyzer;
@@ -47,8 +45,6 @@ public class Clip {
     private Clip(String name, InputStream in, File pitchListingFile, double secondSpectrumOffset) throws IOException {
         /* Pitch-Listing abarbeiten */
         pitchAnalyzer = new PitchAnalyzer(pitchListingFile);
-        
-        frameSize = DEFAULT_FRAME_SIZE;
         
         byte[] buf = new byte[CHUNK_SIZE_10_MS * 2]; // 16-bit Monosamples
         int n;
@@ -174,10 +170,32 @@ public class Clip {
     /* Analyse / Erkennung */
     public ArrayList<double[]> createCharacteristicsVector() {
     	characteristicsVectorSeries = new ArrayList<double[]>();
+    	
+    	ArrayList<double[]> cvAll = createCharacteristicsVectorDCTBased(), 
+    						cv = new ArrayList<double[]>();
+    		
+    	cv.add(cvAll.get(0));
+    	
+    	for (int c = 1; c < cvAll.size(); c++) {
+    		boolean isSameAsPrevious = true;
+    		double[] previous = cvAll.get(c - 1), current = cvAll.get(c);
+    		
+    		for (int ci = 0; ci < previous.length; ci++) { //Sie haben garantiert die gleiche Länge
+    			if (previous[ci] != current[ci]) {
+    				isSameAsPrevious = false;
+    			}
+    		}
+    		
+    		if (!isSameAsPrevious) {
+    			cv.add(current);
+    		}
+    	}
+    				
+    	return cv;
+    	
     	//return createCharacteristicsVectorGodoyBased();
     	//return createCharacteristicsVectorFunctionValueBased();
-    	//return createCharacteristicsVectorDCTBased();
-    	return createCharacteristicsVectorCombinedMFCC_DCT();
+    	//return createCharacteristicsVectorCombinedMFCC_DCT();
     	//return createCharacteristicsVectorDCTBasedWithCepstrum();
     	//return createCharacteristicsVectorMFCCBased();    	
     	//return createCharacteristicsVectorCombined();

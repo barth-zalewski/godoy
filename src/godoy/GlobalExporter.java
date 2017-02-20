@@ -59,9 +59,6 @@ public class GlobalExporter {
 		}
 	
 	}
-	
-	public static void exportDifferencesForLockedAxis(Frame frame, ArrayList<double[]> diffs) {
-		
-	}
+
 	
 }
